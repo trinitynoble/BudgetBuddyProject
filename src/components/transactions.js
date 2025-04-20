@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './transactions.css';
 import axios from 'axios';
-import {jwtDecode} from 'jwt-decode'; // Import the jwt-decode library
+import {jwtDecode} from 'jwt-decode'; 
 
 const TransactionHistory = () => {
   const [transactions, setTransactions] = useState([]);
@@ -14,7 +14,7 @@ const TransactionHistory = () => {
     if (token) {
       try {
         const decodedToken = jwtDecode(token);
-        return decodedToken.id; // Assuming 'id' is the key for user ID in your token payload
+        return decodedToken.id; //this is what gets the user id from whoever is logged in, so that if they create a new transaction, it will be linked to their user id
       } catch (error) {
         console.error('Error decoding token:', error);
         return null;
@@ -28,7 +28,6 @@ const TransactionHistory = () => {
     return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
   };
 
-  // Fetch transactions
   const fetchTransactions = async () => {
     try {
       const response = await axios.get('http://localhost:3001/api/transactions', getAuthHeader());
@@ -42,18 +41,17 @@ const TransactionHistory = () => {
     fetchTransactions();
   }, []);
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Create or Update
+  //Create but only if your session is still active
   const handleSubmit = async (e) => {
     e.preventDefault();
     const userId = getUserIdFromToken();
     if (!userId) {
-      alert('User not authenticated.'); // Or handle this in a more user-friendly way
+      alert('User not authenticated.');
       return;
     }
 
@@ -62,35 +60,35 @@ const TransactionHistory = () => {
       if (editing) {
         const response = await axios.put(`http://localhost:3001/api/transactions/${formData.transactionId}`, transactionData, getAuthHeader());
         console.log('API Response (Update):', response.data);
-        setTransactions(response.data);
       } else {
         await axios.post('http://localhost:3001/api/transactions', transactionData, getAuthHeader());
       }
       setFormData({ transactionId: '', date: '', amount: '', description: '', user_id: '' });
       setEditing(false);
-      fetchTransactions();
+      fetchTransactions(); //fetching the updated list
     } catch (err) {
       console.error('Error saving transaction:', err);
     }
   };
-
-  // Set form data for update
+  //Update
   const handleEdit = (transaction) => {
     setFormData(transaction);
     setEditing(true);
   };
 
-  // Delete transaction
+  //Delete
   const handleDelete = async (transactionId) => {
-    try {
-      await axios.delete(`http://localhost:3001/api/transactions/${transactionId}`, getAuthHeader());
-      fetchTransactions();
-    } catch (err) {
-      console.error('Error deleting transaction:', err);
+    if (window.confirm('Are you sure you want to delete this transaction?')) {
+      try {
+        await axios.delete(`http://localhost:3001/api/transactions/${transactionId}`, getAuthHeader());
+        fetchTransactions();
+      } catch (err) {
+        console.error('Error deleting transaction:', err);
+      }
     }
   };
 
-  // Filter by search term
+  //Search
   const filteredTransactions = transactions.filter((t) =>
     t.transactionId?.toString().includes(searchTerm) ||
     t.date.includes(searchTerm) ||
@@ -98,12 +96,9 @@ const TransactionHistory = () => {
     t.amount?.toString().includes(searchTerm) ||
     t.user_id?.toString().includes(searchTerm)
   );
-
   return (
     <div className="transactions-container">
       <h2 className="transactions-header">Transaction History</h2>
-
-      {/* Search */}
       <input
         type="text"
         placeholder="Search transactions..."
@@ -112,7 +107,6 @@ const TransactionHistory = () => {
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-      {/* Form for Create & Update */}
       <form onSubmit={handleSubmit} className="transaction-form">
   <div className="form-row">
     <div className="input-group">
@@ -131,8 +125,6 @@ const TransactionHistory = () => {
   </div>
   <button type="submit" className='create-button'>{editing ? 'Update' : 'Create'} Transaction</button>
 </form>
-
-      {/* Table */}
       <table className="transactions-table">
         <thead>
           <tr>

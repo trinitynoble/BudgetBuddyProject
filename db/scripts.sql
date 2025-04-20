@@ -28,3 +28,12 @@ INSERT INTO Users (user_firstname, user_lastname, user_email, user_phonenumber, 
         ("Test", "Test", "Test@gmail.com", "3332224444","Test");
 
 INSERT INTO Transactions (amount, description, date) VALUES (100.00, 'Deposit', '2023-01-01');
+
+CREATE TABLE IF NOT EXISTS Budget (
+        budget_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        budget_amount REAL NOT NULL,
+        budget_description TEXT NOT NULL,
+        budget_date TEXT NOT NULL,
+        User_id INTEGER NOT NULL,
+        FOREIGN KEY (User_id) REFERENCES Users(User_id)
+    );

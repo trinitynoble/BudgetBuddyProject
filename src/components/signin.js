@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './signin.css';
 import 'boxicons/css/boxicons.min.css';
 
 function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const containerRef = useRef(null);
+  const navigate = useNavigate(); 
 
   const [formData, setFormData] = useState({
     firstname: '',
@@ -20,24 +22,23 @@ function AuthForm() {
   };
 
   const handleInputChange = (e) => {
-    setFormData({ 
-      ...formData, 
-      [e.target.name]: e.target.value 
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
-  
+
     try {
       if (isSignUp) {
-        // ✅ Signup: validate passwords
         if (formData.password !== formData.confirmPassword) {
           alert("Passwords do not match.");
           return;
         }
-  
+
         const response = await fetch('http://localhost:3001/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -49,7 +50,7 @@ function AuthForm() {
             user_password: formData.password,
           }),
         });
-  
+
         const result = await response.json();
         if (response.ok) {
           alert('Registration successful!');
@@ -57,9 +58,8 @@ function AuthForm() {
         } else {
           alert(result.error || 'Registration failed');
         }
-  
+
       } else {
-        // ✅ Login
         const response = await fetch('http://localhost:3001/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -68,12 +68,12 @@ function AuthForm() {
             user_password: formData.password,
           }),
         });
-  
+
         const result = await response.json();
         if (response.ok) {
           alert('Login successful!');
-          localStorage.setItem('token', result.token); // optional: store token
-          // TODO: navigate or update app state here
+          localStorage.setItem('token', result.token); 
+          navigate('/transactions'); //This is what redirects users to the transactions page upon logging in because the dashboard isnt set up yet
         } else {
           alert(result.error || 'Login failed');
         }
@@ -83,7 +83,7 @@ function AuthForm() {
       alert('Something went wrong. Please try again.');
     }
   };
-  
+
 
   useEffect(() => {
     const container = containerRef.current;
@@ -107,7 +107,6 @@ function AuthForm() {
   return (
     <div ref={containerRef} id="container" className="container">
       <div className="row">
-        {/* SIGN UP */}
         <div className="col align-items-center flex-col sign-up">
           <div className="form-wrapper align-items-center">
             <form className="form sign-up" onSubmit={handleSubmit} method = "POST">
@@ -180,7 +179,6 @@ function AuthForm() {
           </div>
         </div>
 
-        {/* SIGN IN */}
         <div className="col align-items-center flex-col sign-in">
           <div className="form-wrapper align-items-center">
             <form className="form sign-in" onSubmit={handleSubmit}>
@@ -214,8 +212,6 @@ function AuthForm() {
           </div>
         </div>
       </div>
-
-      {/* CONTENT SECTION */}
       <div className="row content-row">
         <div className="col align-items-center flex-col">
           <div className="text sign-in"><h2>Welcome</h2></div>

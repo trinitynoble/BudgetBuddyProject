@@ -9,7 +9,7 @@ router.use(express.json());
 
 const SECRET = 'p@ssw0rd'; 
 
-// REGISTER
+//register
 router.post('/register', async (req, res) => {
   const { user_firstname, user_lastname, user_email, user_phonenumber, user_password } = req.body;
 
@@ -43,7 +43,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// LOGIN
+//login
 router.post('/login', (req, res) => {
     const { user_email, user_password } = req.body;
   

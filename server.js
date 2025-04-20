@@ -3,13 +3,14 @@ import sqlite3 from'sqlite3';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import cors from 'cors';
-import transactionRoutes from './src/api/trans.js';
+import transactionRoutes from './api/trans.js';
 import authenticateToken from './middleware/authMiddleware.js';
+import budgetRoutes from './api/budget.js';
 
 const PORT = 3001;
 const app = express();
 const db = new sqlite3.Database('./db/database.db');
-const SECRET = 'p@ssw0rd'; // Use a strong secret in production
+const SECRET = 'p@ssw0rd'; //I know this is not secure, but it's just for testing
 
 app.use(cors({
   origin: 'http://localhost:3000',
@@ -17,9 +18,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
-app.use('/api', transactionRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/budget', budgetRoutes);
 
-// REGISTER
+//Register
 app.post('/api/register', async (req, res) => {
   const { user_firstname, user_lastname, user_email, user_phonenumber, user_password } = req.body;
 
@@ -28,10 +30,10 @@ app.post('/api/register', async (req, res) => {
   }
 
   try {
-    // Check if user already exists
+    //Check if user already exists
     db.get(`SELECT * FROM users WHERE user_email = ?`, [user_email], async (err, existingUser) => {
       if (err) {
-        console.error('❌ DB Lookup Error:', err.message);
+        console.error('DB Lookup Error:', err.message);
         return res.status(500).json({ error: 'Database error.' });
       }
 
@@ -45,7 +47,7 @@ app.post('/api/register', async (req, res) => {
         [user_firstname, user_lastname, user_email, user_phonenumber, hash],
         function (err) {
           if (err) {
-            console.error('❌ DB Insert Error:', err.message);
+            console.error('DB Insert Error:', err.message);
             return res.status(500).json({ error: 'Registration failed.' });
           }
 
@@ -60,12 +62,12 @@ app.post('/api/register', async (req, res) => {
       );
     });
   } catch (err) {
-    console.error('❌ Register Error:', err);
+    console.error('Register Error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// LOGIN
+//Login
 app.post('/api/login', (req, res) => {
   const { user_email, user_password } = req.body;
 
@@ -75,7 +77,7 @@ app.post('/api/login', (req, res) => {
 
   db.get(`SELECT * FROM users WHERE user_email = ?`, [user_email], async (err, user) => {
     if (err) {
-      console.error('❌ DB Lookup Error:', err.message);
+      console.error(' DB Lookup Error:', err.message);
       return res.status(500).json({ error: 'Database error.' });
     }
 
@@ -107,7 +109,6 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// Protected route example
 app.get('/api/profile', authenticateToken, (req, res) => {
   res.json({ message: `Welcome, ${req.user.email}!`, user: req.user });
 });

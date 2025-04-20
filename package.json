@@ -36,6 +36,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:backend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -55,5 +56,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "jest": "^27.5.1",
+    "supertest": "^7.1.0"
   }
 }
