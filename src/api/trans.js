@@ -1,5 +1,5 @@
 import express from 'express';
-import sqlite3 from 'sqlite3'; // Import sqlite3
+import sqlite3 from 'sqlite3';
 
 const router = express.Router();
 
@@ -9,13 +9,16 @@ const db = new sqlite3.Database('./db/database.db', (err) => {
         console.error("Database opening error: " + err.message);
     } else {
         console.log("Successfully opened the database");
-        db.run(`CREATE TABLE IF NOT EXISTS transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transactionId TEXT,
-            date TEXT,
-            amount REAL,
-            status TEXT
-        )`, (err) => {
+        db.run(`
+            CREATE TABLE IF NOT EXISTS transactions (
+                transactionId INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT,
+                amount REAL,
+                description TEXT,
+                user_id INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users(user_id)
+            )
+        `, (err) => {
             if (err) {
                 console.error("Table creation error: " + err.message);
             } else {
@@ -25,6 +28,7 @@ const db = new sqlite3.Database('./db/database.db', (err) => {
     }
 });
 
+// GET: All transactions
 router.get('/transactions', (req, res) => {
     db.all('SELECT * FROM transactions', [], (err, rows) => {
         if (err) {
@@ -37,33 +41,34 @@ router.get('/transactions', (req, res) => {
 
 // POST: Create new transaction
 router.post('/transactions', (req, res) => {
-    const { transactionId, date, amount, status } = req.body;
+    const { date, amount, description, user_id } = req.body;
+    console.log("Received data:", req.body);
     db.run(
-        `INSERT INTO transactions (transactionId, date, amount, status) VALUES (?, ?, ?, ?)`,
-        [transactionId, date, amount, status], // Use transactionId here
+        `INSERT INTO transactions (date, amount, description, user_id) VALUES (?, ?, ?, ?)`,
+        [date, amount, description, user_id],
         function (err) {
             if (err) {
                 console.error(err);
                 return res.status(400).json({ error: 'Database error' });
             }
             res.json({
-                id: this.lastID,
-                transactionId,
+                transactionId: this.lastID,
                 date,
                 amount,
-                status
+                description,
+                user_id
             });
         }
     );
 });
 
-// PUT: Update existing transaction
-router.put('/transactions/:id', (req, res) => {
-    const { id } = req.params;
-    const { transactionId, date, amount, status } = req.body;
+// PUT: Update transaction
+router.put('/transactions/:transactionId', (req, res) => {
+    const { transactionId } = req.params;
+    const { date, amount, description, user_id } = req.body;
     db.run(
-        `UPDATE transactions SET transactionId = ?, date = ?, amount = ?, status = ? WHERE id = ?`,
-        [transactionId, date, amount, status, id],
+        `UPDATE transactions SET date = ?, amount = ?, description = ?, user_id = ? WHERE transactionId = ?`,
+        [date, amount, description, user_id, transactionId],
         function (err) {
             if (err) {
                 console.error(err);
@@ -74,11 +79,12 @@ router.put('/transactions/:id', (req, res) => {
     );
 });
 
-router.delete('/transactions/:id', (req, res) => {
-    const { id } = req.params;
+// DELETE: Delete transaction
+router.delete('/transactions/:transactionId', (req, res) => {
+    const { transactionId } = req.params;
     db.run(
-        `DELETE FROM transactions WHERE id = ?`,
-        [id],
+        `DELETE FROM transactions WHERE transactionId = ?`,
+        [transactionId],
         function (err) {
             if (err) {
                 console.error(err);
@@ -89,11 +95,12 @@ router.delete('/transactions/:id', (req, res) => {
     );
 });
 
-router.get('/transactions/:id', (req, res) => {
-    const { id } = req.params;
+// GET: Single transaction
+router.get('/transactions/:transactionId', (req, res) => {
+    const { transactionId } = req.params;
     db.get(
-        `SELECT * FROM transactions WHERE id = ?`,
-        [id],
+        `SELECT * FROM transactions WHERE transactionId = ?`,
+        [transactionId],
         (err, row) => {
             if (err) {
                 console.error(err);
@@ -104,11 +111,18 @@ router.get('/transactions/:id', (req, res) => {
     );
 });
 
+// GET: Search transactions
 router.get('/transactions/search', (req, res) => {
     const { query } = req.query;
+    if (!query) return res.status(400).json({ error: 'Missing search query' });
+
     db.all(
-        `SELECT * FROM transactions WHERE transactionId LIKE ? OR date LIKE ? OR status LIKE ?`,
-        [`%${query}%`, `%${query}%`, `%${query}%`],
+        `SELECT * FROM transactions WHERE 
+         transactionId LIKE ? OR 
+         date LIKE ? OR 
+         description LIKE ? OR 
+         user_id LIKE ?`,
+        [`%${query}%`, `%${query}%`, `%${query}%`, `%${query}%`],
         (err, rows) => {
             if (err) {
                 console.error(err);

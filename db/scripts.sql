@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS Users (
         user_password TEXT NOT NULL
     );
 CREATE TABLE Transactions (
-    Transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transactionId INTEGER PRIMARY KEY AUTOINCREMENT,
     amount REAL NOT NULL,
     description TEXT NOT NULL,
     date DATE NOT NULL,

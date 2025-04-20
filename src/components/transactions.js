@@ -4,7 +4,8 @@ import axios from 'axios';
 
 const TransactionHistory = () => {
   const [transactions, setTransactions] = useState([]);
-  const [formData, setFormData] = useState({ date: '', amount: '', status: '', transactionId: '', id: '' });
+  const [formData, setFormData] = useState({ transactionId: '', date: '', amount: '', description: '', user_id: '' });
+  const [userId, setUserId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [editing, setEditing] = useState(false);
 
@@ -33,11 +34,14 @@ const TransactionHistory = () => {
     e.preventDefault();
     try {
       if (editing) {
-        await axios.put(`http://localhost:3001/api/transactions/${formData.id}`, formData);
+        const response = await axios.put(`http://localhost:3001/api/transactions/${formData.transactionId}`, formData);
+        console.log('API Response:', response.data);
+        setTransactions(response.data);
       } else {
         await axios.post('http://localhost:3001/api/transactions', formData);
       }
-      setFormData({ date: '', amount: '', status: '', transactionId: '', id: '' });
+      setFormData({ transactionId: '', date: '', amount: '', description: '', user_id: '' });
+      setUserId('');
       setEditing(false);
       fetchTransactions();
     } catch (err) {
@@ -52,9 +56,9 @@ const TransactionHistory = () => {
   };
 
   // Delete transaction
-  const handleDelete = async (id) => {
+  const handleDelete = async (transactionId) => {
     try {
-      await axios.delete(`http://localhost:3001/api/transactions/${id}`);
+      await axios.delete(`http://localhost:3001/api/transactions/${transactionId}`);
       fetchTransactions();
     } catch (err) {
       console.error('Error deleting transaction:', err);
@@ -65,7 +69,9 @@ const TransactionHistory = () => {
   const filteredTransactions = transactions.filter((t) =>
     t.transactionId?.toString().includes(searchTerm) ||
     t.date.includes(searchTerm) ||
-    t.status.toLowerCase().includes(searchTerm.toLowerCase())
+    t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.amount?.toString().includes(searchTerm) ||
+    t.user_id?.toString().includes(searchTerm) 
   );
 
   return (
@@ -85,9 +91,9 @@ const TransactionHistory = () => {
       <form onSubmit={handleSubmit} className="transaction-form">
         <input name="date" type="date" value={formData.date} onChange={handleChange} required />
         <input name="amount" type="number" value={formData.amount} onChange={handleChange} required />
-        <input name="status" type="text" value={formData.status} onChange={handleChange} required />
-        <input name="transactionId" type="text" value={formData.transactionId} onChange={handleChange} required />
-        {editing && <input name="id" type="hidden" value={formData.id} />}
+        <input name="description" type="text" value={formData.description} onChange={handleChange} required />
+        <input name="user_id" type="text" value={formData.user_id} onChange={handleChange} required />
+        {editing && <input name="transactionId" type="hidden" value={formData.transactionId} />}
         <button type="submit">{editing ? 'Update' : 'Create'} Transaction</button>
       </form>
 
@@ -95,24 +101,26 @@ const TransactionHistory = () => {
       <table className="transactions-table">
         <thead>
           <tr>
+          <th>Transaction ID</th>
             <th>Date</th>
-            <th>Transaction ID</th>
             <th>Amount</th>
-            <th>Status</th>
+            <th>Description</th>
+            <th>User ID</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((t) => (
-              <tr key={t.id}>
-                <td>{t.date}</td>
+              <tr key={t.transactionId}>
                 <td>{t.transactionId}</td>
+                <td>{t.date}</td>
                 <td>{t.amount}</td>
-                <td>{t.status}</td>
+                <td>{t.description}</td>
+                <td>{t.user_id}</td>
                 <td>
                   <button onClick={() => handleEdit(t)}>Edit</button>
-                  <button onClick={() => handleDelete(t.id)}>Delete</button>
+                  <button onClick={() => handleDelete(t.transactionId)}>Delete</button>
                 </td>
               </tr>
             ))
