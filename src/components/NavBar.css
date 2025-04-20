@@ -1,5 +1,7 @@
 .navbar {
-    background: linear-gradient(90deg, rgb(28, 27, 27) 0%, rgb(26, 23, 23) 100%);
+    background-image: url('../../public/images/dashboard.png'); /* Correct way to set background image */
+    background-size: cover; /* Optional: to make the image cover the entire navbar */
+    background-repeat: no-repeat; /* Optional: to prevent the image from repeating */
     height: 80px;
     display: flex;
     justify-content: space-between; /* Adjusted for proper spacing */
@@ -12,7 +14,7 @@
 }
 
 .logo-image {
-    height: 60px; /* Adjusted size for better fit */
+    height: 80px; /* Adjusted size for better fit */
 }
 
 .navbar-container {
