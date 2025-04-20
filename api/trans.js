@@ -1,19 +1,24 @@
 import express from 'express';
 import sqlite3 from 'sqlite3';
-import authenticateToken from '../../middleware/authMiddleware'; // Import your middleware
+import authenticateToken from '../middleware/authMiddleware.js'; 
 
 const router = express.Router();
 
-// Initialize SQLite database (remains the same)
-const db = new sqlite3.Database('./db/database.db', (err) => { /* ... */ });
+const db = new sqlite3.Database('../db/database.db', (err) => { /* ... */ });
 
-// GET: All transactions (remains the same)
-router.get('/transactions', (req, res) => { /* ... */ });
+router.get('/transactions', (req, res) => {
+    db.all('SELECT * FROM transactions', [], (err, rows) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json(rows);
+    });
+});
 
-// POST: Create new transaction - Apply the authenticateToken middleware
 router.post('/transactions', authenticateToken, (req, res) => {
     const { date, amount, description } = req.body;
-    const userId = req.user.id; // Get user ID from the authenticated token
+    const userId = req.user.id; 
 
     console.log("Received data for new transaction:", { ...req.body, userId });
 
@@ -39,13 +44,10 @@ router.post('/transactions', authenticateToken, (req, res) => {
     );
 });
 
-// PUT: Update transaction (you might want to authenticate this too)
 router.put('/transactions/:transactionId', authenticateToken, (req, res) => {
     const { transactionId } = req.params;
     const { date, amount, description, user_id } = req.body;
-    const currentUserId = req.user.id; // Get current user's ID
-
-    // Optional: Add a check to ensure the user updating the transaction owns it
+    const currentUserId = req.user.id; //this gets the user ID from the token
     db.get(`SELECT user_id FROM transactions WHERE transactionId = ?`, [transactionId], (err, row) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });

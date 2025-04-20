@@ -1,5 +1,5 @@
 import express from 'express';
-import db from '../../db/database.db'; 
+import db from '../db/database.js'; 
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import cors from 'cors';

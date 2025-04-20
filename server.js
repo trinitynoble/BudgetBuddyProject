@@ -3,7 +3,7 @@ import sqlite3 from'sqlite3';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import cors from 'cors';
-import transactionRoutes from './src/api/trans.js';
+import transactionRoutes from './api/trans.js';
 import authenticateToken from './middleware/authMiddleware.js';
 
 const PORT = 3001;

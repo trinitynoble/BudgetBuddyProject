@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './transactions.css';
 import axios from 'axios';
-import {jwtDecode} from 'jwt-decode'; // Import the jwt-decode library
+import { jwtDecode } from 'jwt-decode'; // Import the jwt-decode library
 
 const TransactionHistory = () => {
   const [transactions, setTransactions] = useState([]);
@@ -31,8 +31,12 @@ const TransactionHistory = () => {
   // Fetch transactions
   const fetchTransactions = async () => {
     try {
+      // Let's log the request to see if it's being made with the auth header
+      console.log('Fetching transactions with header:', getAuthHeader());
       const response = await axios.get('http://localhost:3001/api/transactions', getAuthHeader());
+      console.log('API Response:', response.data); // Log the API response
       setTransactions(response.data);
+      console.log('Transactions State:', response.data); // Log the state after setting it
     } catch (err) {
       console.error('Failed to fetch transactions:', err);
     }
@@ -114,23 +118,23 @@ const TransactionHistory = () => {
 
       {/* Form for Create & Update */}
       <form onSubmit={handleSubmit} className="transaction-form">
-  <div className="form-row">
-    <div className="input-group">
-      <label htmlFor="date">Date:</label>
-      <input name="date" type="date" id="date" className='input-boxes' value={formData.date} onChange={handleChange} required />
-    </div>
-    <div className="input-group">
-      <label htmlFor="amount">Amount:</label>
-      <input name="amount" type="number" id="amount" className='input-boxes' placeholder='Amount' value={formData.amount} onChange={handleChange} required />
-    </div>
-    <div className="input-group">
-      <label htmlFor="description">Description:</label>
-      <input name="description" type="text" id="description" className='input-boxes' placeholder='Description' value={formData.description} onChange={handleChange} required />
-    </div>
-    {editing && <input name="transactionId" type="hidden" value={formData.transactionId} />}
-  </div>
-  <button type="submit" className='create-button'>{editing ? 'Update' : 'Create'} Transaction</button>
-</form>
+        <div className="form-row">
+          <div className="input-group">
+            <label htmlFor="date">Date:</label>
+            <input name="date" type="date" id="date" className='input-boxes' value={formData.date} onChange={handleChange} required />
+          </div>
+          <div className="input-group">
+            <label htmlFor="amount">Amount:</label>
+            <input name="amount" type="number" id="amount" className='input-boxes' placeholder='Amount' value={formData.amount} onChange={handleChange} required />
+          </div>
+          <div className="input-group">
+            <label htmlFor="description">Description:</label>
+            <input name="description" type="text" id="description" className='input-boxes' placeholder='Description' value={formData.description} onChange={handleChange} required />
+          </div>
+          {editing && <input name="transactionId" type="hidden" value={formData.transactionId} />}
+        </div>
+        <button type="submit" className='create-button'>{editing ? 'Update' : 'Create'} Transaction</button>
+      </form>
 
       {/* Table */}
       <table className="transactions-table">
@@ -155,7 +159,7 @@ const TransactionHistory = () => {
                 <td>{t.user_id}</td>
                 <td>
                   <button className='update-button' onClick={() => handleEdit(t)}>Edit</button>
-                  <button className='delete-button'onClick={() => handleDelete(t.transactionId)}>Delete</button>
+                  <button className='delete-button' onClick={() => handleDelete(t.transactionId)}>Delete</button>
                 </td>
               </tr>
             ))
