@@ -3,10 +3,8 @@ import './App.css';
 import NavBar from './components/NavBar.js';
 import SignIn from './components/signin.js';
 import TransactionHistory from './components/transactions.js';
+import ProtectedRoute from './components/ProtectedRoute.js'; // Import the new component
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-
-//import Test from './components/Test';
-//import Forms from './components/Forms';
 
 function App() {
   return (
@@ -16,10 +14,10 @@ function App() {
         <Routes>
           <Route path="/" element={<SignIn />} />
           <Route path="/signin" element={<SignIn />} />
-          <Route path="/transactions" element={<TransactionHistory />} />
-          {/* <Route path="/dashboard" element={<Dashboard />} /> */}
-          {/* <Route path="/forms" element={<Forms />} /> */}
-          {/* <Route path="/about" element={<About />} /> */}
+          <Route path="/transactions" element={<ProtectedRoute><TransactionHistory /></ProtectedRoute>} />
+          {/* <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
+          {/* <Route path="/forms" element={<ProtectedRoute><Forms /></ProtectedRoute>} /> */}
+          {/* <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} /> */}
         </Routes>
       </div>
     </Router>

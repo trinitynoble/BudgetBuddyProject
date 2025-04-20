@@ -6,13 +6,13 @@ CREATE TABLE IF NOT EXISTS Users (
         user_phonenumber TEXT NOT NULL UNIQUE,
         user_password TEXT NOT NULL
     );
-CREATE TABLE Transactions (
+CREATE TABLE IF NOT EXISTS transactions (
     transactionId INTEGER PRIMARY KEY AUTOINCREMENT,
     amount REAL NOT NULL,
     description TEXT NOT NULL,
     date DATE NOT NULL,
-    User_id INTEGER NOT NULL,
-        FOREIGN KEY (User_id) REFERENCES Users(User_id)
+    user_id INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES Users(user_id)
     );
 INSERT INTO Transactions (amount, description, date, User_id) VALUES (100.00, 'Deposit', '2023-01-01', 1);
 ALTER TABLE Transactions RENAME TO Transactions_old;
@@ -27,4 +27,13 @@ INSERT INTO Users (user_firstname, user_lastname, user_email, user_phonenumber, 
     VALUES
         ("Test", "Test", "Test@gmail.com", "3332224444","Test");
 
+CREATE TABLE IF NOT EXISTS Budget(
+    budgetId INTEGER PRIMARY KEY AUTOINCREMENT,
+    budget_description TEXT NOT NULL,
+    budget_amount REAL NOT NULL,
+    user_id INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
+
 INSERT INTO Transactions (amount, description, date) VALUES (100.00, 'Deposit', '2023-01-01');
+CREATE INDEX idx_user_id ON transactions (user_id);

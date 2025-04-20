@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import './signin.css';
 import 'boxicons/css/boxicons.min.css';
 
 function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const containerRef = useRef(null);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const [formData, setFormData] = useState({
     firstname: '',
@@ -20,16 +22,16 @@ function AuthForm() {
   };
 
   const handleInputChange = (e) => {
-    setFormData({ 
-      ...formData, 
-      [e.target.name]: e.target.value 
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
-  
+
     try {
       if (isSignUp) {
         // ✅ Signup: validate passwords
@@ -37,7 +39,7 @@ function AuthForm() {
           alert("Passwords do not match.");
           return;
         }
-  
+
         const response = await fetch('http://localhost:3001/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -49,7 +51,7 @@ function AuthForm() {
             user_password: formData.password,
           }),
         });
-  
+
         const result = await response.json();
         if (response.ok) {
           alert('Registration successful!');
@@ -57,7 +59,7 @@ function AuthForm() {
         } else {
           alert(result.error || 'Registration failed');
         }
-  
+
       } else {
         // ✅ Login
         const response = await fetch('http://localhost:3001/api/login', {
@@ -68,12 +70,12 @@ function AuthForm() {
             user_password: formData.password,
           }),
         });
-  
+
         const result = await response.json();
         if (response.ok) {
           alert('Login successful!');
-          localStorage.setItem('token', result.token); // optional: store token
-          // TODO: navigate or update app state here
+          localStorage.setItem('token', result.token); // Store token
+          navigate('/transactions'); // Redirect to the transactions page upon successful login
         } else {
           alert(result.error || 'Login failed');
         }
@@ -83,7 +85,7 @@ function AuthForm() {
       alert('Something went wrong. Please try again.');
     }
   };
-  
+
 
   useEffect(() => {
     const container = containerRef.current;
