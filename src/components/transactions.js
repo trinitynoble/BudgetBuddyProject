@@ -42,14 +42,11 @@ const TransactionHistory = () => {
       fetchTransactions();
     }, [fetchTransactions]);
   
-    // Handle input changes
     const handleChange = (e) => {
       const { name, value } = e.target;
       setFormData((prev) => ({ ...prev, [name]: value }));
     };
-  
-    // Create or Update
-    const handleSubmit = async (e) => {
+      const handleSubmit = async (e) => {
       e.preventDefault();
       const userId = getUserIdFromToken();
       if (!userId) {
@@ -63,7 +60,6 @@ const TransactionHistory = () => {
         if (editing) {
           response = await axios.put(`http://localhost:3001/api/transactions/${formData.transactionId}`, transactionData, getAuthHeader());
           console.log('API Response (Update):', response.data);
-          // Update the transactions array with the updated transaction
           setTransactions(prevTransactions =>
             prevTransactions.map(transaction =>
               transaction.transactionId === response.data.transactionId ? response.data : transaction
@@ -74,20 +70,16 @@ const TransactionHistory = () => {
         }
         setFormData({ transactionId: '', date: '', amount: '', description: '', user_id: '' });
         setEditing(false);
-        fetchTransactions(); // Refetch all transactions after creating/updating
+        fetchTransactions(); //refetch all transactions after creating/updating
       } catch (err) {
         console.error('Error saving transaction:', err);
       }
     };
-  
-    // Set form data for update
-    const handleEdit = (transaction) => {
+      const handleEdit = (transaction) => {
       setFormData(transaction);
       setEditing(true);
     };
-  
-    // Delete transaction
-    const handleDelete = async (transactionId) => {
+      const handleDelete = async (transactionId) => {
       try {
         await axios.delete(`http://localhost:3001/api/transactions/${transactionId}`, getAuthHeader());
         fetchTransactions();
@@ -95,9 +87,7 @@ const TransactionHistory = () => {
         console.error('Error deleting transaction:', err);
       }
     };
-  
-    // Filter by search term
-    const filteredTransactions = transactions.filter((t) =>
+      const filteredTransactions = transactions.filter((t) =>
       t.transactionId?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -158,8 +148,8 @@ const TransactionHistory = () => {
                 <td>{t.description}</td>
                 <td>{t.user_id}</td>
                 <td>
-                  <button onClick={() => handleEdit(t)}>Edit</button>
-                  <button onClick={() => handleDelete(t.transactionId)}>Delete</button>
+                  <button className='update-button'onClick={() => handleEdit(t)}>Edit</button>
+                  <button className='delete-button'onClick={() => handleDelete(t.transactionId)}>Delete</button>
                 </td>
               </tr>
             ))

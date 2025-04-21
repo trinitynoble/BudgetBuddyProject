@@ -1,15 +1,14 @@
 import express from 'express';
-import authenticateToken from '../../middleware/authMiddleware.js'; // Import your middleware
+import authenticateToken from '../../middleware/authMiddleware.js';
 import db from '../database.js';
 
 const router = express.Router();
 
-// GET: All transactions (remains the same)
-router.get('/', authenticateToken, (req, res) => { // Applied authenticateToken here
+router.get('/', authenticateToken, (req, res) => { //authentication token used to ensure user is logged in 
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  const userId = req.user.id; // Get user ID from the authenticated token
+  const userId = req.user.id; //this gets the user's ID from the authentication token and applies it to the insert querries.
   db.all('SELECT transactionId, amount, description, date, user_id FROM transactions WHERE user_id = ?', [userId], (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
@@ -19,8 +18,7 @@ router.get('/', authenticateToken, (req, res) => { // Applied authenticateToken 
   });
 });
 
-// POST: Create new transaction - Apply the authenticateToken middleware
-// filepath: /Users/trinitynoble/Documents/BudgetBuddyProject/src/api/trans.js
+
 router.post('/', authenticateToken, (req, res) => {
   const { amount, description, date } = req.body;
   const userId = req.user.id;
@@ -50,8 +48,7 @@ router.post('/', authenticateToken, (req, res) => {
   );
 });
 
-// PUT: Update transaction
-router.put('/:transactionId', authenticateToken, (req, res) => { // Path with transactionId
+router.put('/:transactionId', authenticateToken, (req, res) => { 
   const { transactionId } = req.params;
   const { amount, description, date } = req.body;
   const currentUserId = req.user.id;
@@ -82,9 +79,7 @@ router.put('/:transactionId', authenticateToken, (req, res) => { // Path with tr
   });
 });
 
-// DELETE: Delete transaction
-router.delete('/:transactionId', authenticateToken, (req, res) => { // Path with transactionId
-  // ... (Your delete route code - likely no changes needed) ...
+router.delete('/:transactionId', authenticateToken, (req, res) => { 
   const { transactionId } = req.params;
   const currentUserId = req.user.id;
   db.get(`SELECT user_id FROM transactions WHERE transactionId = ?`, [transactionId], (err, row) => {
@@ -108,9 +103,7 @@ router.delete('/:transactionId', authenticateToken, (req, res) => { // Path with
   });
 });
 
-// GET: Single transaction
-router.get('/:transactionId', authenticateToken, (req, res) => { // Path with transactionId
-  // ... (Your get single transaction route code - likely no changes needed) ...
+router.get('/:transactionId', authenticateToken, (req, res) => { 
   const { transactionId } = req.params;
   const userId = req.user.id;
   db.get('SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ? AND user_id = ?', [transactionId, userId], (err, row) => {
@@ -124,9 +117,7 @@ router.get('/:transactionId', authenticateToken, (req, res) => { // Path with tr
   });
 });
 
-// GET: Search transactions
-router.get('/search', authenticateToken, (req, res) => { // Path /search within /api/transactions
-  // ... (Your search route code - likely no changes needed) ...
+router.get('/search', authenticateToken, (req, res) => { 
   const { query } = req.query;
   const userId = req.user.id;
   if (!query) {

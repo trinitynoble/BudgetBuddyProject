@@ -1,0 +1,192 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import './budget.css'; // Assuming you have a budget.css file
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
+
+const BudgetHistory = () => {
+  const [Budget, setBudget] = useState([]);
+  const [formData, setFormData] = useState({ budgetId: '', budget_amount: '', budget_description: '', user_id: '' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [editing, setEditing] = useState(false);
+
+  const getUserIdFromToken = useCallback(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        return decodedToken.id;
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        return null;
+      }
+    }
+    return null;
+  }, []);
+
+  const getAuthHeader = useCallback(() => {
+    const token = localStorage.getItem('token');
+    return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+  }, []);
+
+  const fetchBudget = useCallback(async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/api/budget', getAuthHeader());
+      setBudget(response.data);
+      console.log('Fetched Budget Data:', response.data); // Log fetched data
+    } catch (err) {
+      console.error('Failed to fetch budget:', err);
+    }
+  }, [getAuthHeader]);
+
+  useEffect(() => {
+    console.log('Fetching budget on mount...');
+    const token = localStorage.getItem('token');
+    console.log('Token on mount:', token);
+    fetchBudget();
+  }, [fetchBudget]);
+
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      alert('User not authenticated.');
+      return;
+    }
+
+    try {
+      const budgetData = { ...formData, user_id: userId };
+      let response;
+      if (editing) {
+        console.log('Updating budget with ID:', formData.budgetId, 'Data:', budgetData); // Log update details
+        response = await axios.put(`http://localhost:3001/api/budget/${formData.budgetId}`, budgetData, getAuthHeader());
+        console.log('API Response (Update):', response.data);
+        setBudget(prevBudget =>
+          prevBudget.map(budget =>
+            budget.budgetId === response.data.budgetId ? response.data : budget
+          )
+        );
+      } else {
+        console.log('Creating new budget:', budgetData); // Log creation details
+        await axios.post('http://localhost:3001/api/budget/', budgetData, getAuthHeader());
+      }
+      setFormData({ budgetId: '', budget_amount: '', budget_description: '', user_id: '' });
+      setEditing(false);
+      fetchBudget(); //refetch all budget after creating/updating
+    } catch (err) {
+      console.error('Error saving budget:', err);
+    }
+  }, [editing, formData, getAuthHeader, getUserIdFromToken, fetchBudget]);
+
+  const handleEdit = useCallback((budget) => {
+    console.log('Editing budget:', budget);
+    setFormData(budget);
+    setEditing(true);
+  }, []);
+
+  const handleDelete = useCallback(async (budgetId) => {
+    try {
+      console.log('Deleting budget with ID:', budgetId);
+      await axios.delete(`http://localhost:3001/api/budget/${budgetId}`, getAuthHeader());
+      fetchBudget();
+    } catch (err) {
+      console.error('Error deleting budget:', err);
+    }
+  }, [getAuthHeader, fetchBudget]);
+
+  const filteredBudget = React.useMemo(() => {
+    return Budget.filter((b) =>
+      (b.budgetId?.toString()?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
+      (b.budget_description?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
+      (b.budget_amount?.toString()?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
+      (b.user_id?.toString()?.toLowerCase() ?? '').includes(searchTerm.toLowerCase())
+    );
+  }, [Budget, searchTerm]);
+
+  return (
+    <div className="b-container">
+      <h2 className="b-header">Budget History</h2>
+
+      {/* Search */}
+      <input
+        type="text"
+        placeholder="Search budgets..."
+        className="search-bar"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      <form onSubmit={handleSubmit} className="b-form">
+        <div className="form-row">
+          <div className="input-group">
+            <label htmlFor="budget_amount">Amount:</label>
+            <input
+              name="budget_amount"
+              type="number"
+              id="budget_amount"
+              className='input-boxes'
+              placeholder='Amount'
+              value={formData.budget_amount}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label htmlFor="budget_description">Description:</label>
+            <input
+              name="budget_description"
+              type="text"
+              id="budget_description"
+              className='input-boxes'
+              placeholder='Description'
+              value={formData.budget_description}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          {editing && <input name="budgetId" type="hidden" value={formData.budgetId} />}
+        </div>
+        <button type="submit" className='create-button'>{editing ? 'Update' : 'Create'} Budget</button>
+      </form>
+
+      {/* Table */}
+      <table className="b-table">
+        <thead>
+          <tr>
+            <th>Budget ID</th>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>User ID</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredBudget.length > 0 ? (
+            filteredBudget.map((b) => (
+              <tr key={b.budgetId}>
+                <td>{b.budgetId}</td>
+                <td>{b.budget_amount}</td>
+                <td>{b.budget_description}</td>
+                <td>{b.user_id}</td>
+                <td>
+                  <button className='update-button' onClick={() => handleEdit(b)}>Edit</button>
+                  <button className='delete-button' onClick={() => handleDelete(b.budgetId)}>Delete</button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" style={{ textAlign: 'center' }}>No budgets found.</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default BudgetHistory;

@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 
-// Open database
-const db = new sqlite3.Database('../db/database.db', sqlite3.OPEN_READWRITE, (err) => {
+//open database
+const db = new sqlite3.Database('./db/database.db', sqlite3.OPEN_READWRITE, (err) => {
   if (err) {
     console.error('Error opening database', err.message);
   } else {
@@ -9,5 +9,4 @@ const db = new sqlite3.Database('../db/database.db', sqlite3.OPEN_READWRITE, (er
   }
 });
 
-// Export db instance
 export default db;

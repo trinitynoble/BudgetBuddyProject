@@ -3,13 +3,14 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import cors from 'cors';
 import transactionRoutes from './api/trans.js'; 
-import authenticateToken from '../middleware/authMiddleware.js'; // Corrected path
+import budgetRoutes from './api/bud.js';
+import authenticateToken from '../middleware/authMiddleware.js'; 
 import db from './database.js';
 
 const PORT = 3001;
 const app = express();
 
-const SECRET = 'p@ssw0rd'; // Use a strong secret in production
+const SECRET = 'p@ssw0rd'; //i know this is not a good practice, but since this is a test project, i will leave it like this for now
 
 const corsOptions = {
   origin: 'http://localhost:3000',
@@ -20,11 +21,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.use('/api/transactions', authenticateToken, transactionRoutes); // Use the transaction routes
+app.use('/api/budget', authenticateToken, budgetRoutes); //authentication token used to ensure user is logged in
+app.use('/api/transactions', authenticateToken, transactionRoutes); 
 
-// REGISTER
 app.post('/api/register', async (req, res) => {
-  // ... (Your register route code - no changes assumed) ...
   const { user_firstname, user_lastname, user_email, user_phonenumber, user_password } = req.body;
 
   if (!user_firstname || !user_lastname || !user_email || !user_phonenumber || !user_password) {
@@ -34,7 +34,7 @@ app.post('/api/register', async (req, res) => {
   try {
     db.get(`SELECT * FROM users WHERE user_email = ?`, [user_email], async (err, existingUser) => {
       if (err) {
-        console.error('❌ DB Lookup Error:', err.message);
+        console.error('DB Lookup Error:', err.message);
         return res.status(500).json({ error: 'Database error.' });
       }
       if (existingUser) {
@@ -46,7 +46,7 @@ app.post('/api/register', async (req, res) => {
         [user_firstname, user_lastname, user_email, user_phonenumber, hash],
         function (err) {
           if (err) {
-            console.error('❌ DB Insert Error:', err.message);
+            console.error(' DB Insert Error:', err.message);
             return res.status(500).json({ error: 'Registration failed.' });
           }
           res.json({ id: this.lastID, user_firstname, user_lastname, user_email, user_phonenumber });
@@ -54,14 +54,12 @@ app.post('/api/register', async (req, res) => {
       );
     });
   } catch (err) {
-    console.error('❌ Register Error:', err);
+    console.error('Register Error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// LOGIN
 app.post('/api/login', (req, res) => {
-  // ... (Your login route code - no changes assumed) ...
   const { user_email, user_password } = req.body;
 
   if (!user_email || !user_password) {
@@ -70,7 +68,7 @@ app.post('/api/login', (req, res) => {
 
   db.get(`SELECT * FROM users WHERE user_email = ?`, [user_email], async (err, user) => {
     if (err) {
-      console.error('❌ DB Lookup Error:', err.message);
+      console.error('DB Lookup Error:', err.message);
       return res.status(500).json({ error: 'Database error.' });
     }
     if (!user) {
@@ -103,11 +101,8 @@ app.listen(PORT, () => {
 
 process.on('uncaughtException', (err) => {
   console.error('Unhandled exception:', err);
-  // Optionally, you can gracefully shut down the server here
-  // process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled rejection:', reason);
-  // Optionally, you can log the promise
 });

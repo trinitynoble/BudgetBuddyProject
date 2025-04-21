@@ -55,8 +55,8 @@ function NavBar() {
             )}
             {isLoggedIn() && (
               <li className="nav-item">
-                <Link to="/forms" className="nav-links" onClick={closeMobileMenu}>
-                  Forms
+                <Link to="/budget" className="nav-links" onClick={closeMobileMenu}>
+                  Budget
                 </Link>
               </li>
             )}

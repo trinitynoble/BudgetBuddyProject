@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom'; 
 import './signin.css';
 import 'boxicons/css/boxicons.min.css';
 
 function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const containerRef = useRef(null);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate(); 
 
   const [formData, setFormData] = useState({
     firstname: '',
@@ -34,7 +34,6 @@ function AuthForm() {
 
     try {
       if (isSignUp) {
-        // ✅ Signup: validate passwords
         if (formData.password !== formData.confirmPassword) {
           alert("Passwords do not match.");
           return;
@@ -61,7 +60,6 @@ function AuthForm() {
         }
 
       } else {
-        // ✅ Login
         const response = await fetch('http://localhost:3001/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -74,8 +72,8 @@ function AuthForm() {
         const result = await response.json();
         if (response.ok) {
           alert('Login successful!');
-          localStorage.setItem('token', result.token); // Store token
-          navigate('/transactions'); // Redirect to the transactions page upon successful login
+          localStorage.setItem('token', result.token); 
+          navigate('/transactions');
         } else {
           alert(result.error || 'Login failed');
         }
