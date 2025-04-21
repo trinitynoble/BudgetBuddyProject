@@ -5,15 +5,15 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 
 function NavBar() {
   const [click, setClick] = useState(false);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const handleClick = () => setClick(!click);
   const closeMobileMenu = () => setClick(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); // Remove the token from local storage
-    navigate('/signin'); // Redirect the user to the sign-in page
-    closeMobileMenu(); // Close the mobile menu if it's open
+    localStorage.removeItem('token'); //remove the token from local storage after logged out
+    navigate('/signin'); //eedirect the user to the sign-in page
+    closeMobileMenu(); //close the mobile menu if it's open
   };
 
   // Function to check if the user is logged in (token exists)

@@ -7,7 +7,7 @@ function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const containerRef = useRef(null);
   const navigate = useNavigate(); 
-
+//this makes the registration form blank
   const [formData, setFormData] = useState({
     firstname: '',
     lastname: '',
@@ -38,7 +38,7 @@ function AuthForm() {
           alert("Passwords do not match.");
           return;
         }
-
+//this is the registration form, it takes the information inputted from users and attaches it to the database.
         const response = await fetch('http://localhost:3001/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -60,6 +60,7 @@ function AuthForm() {
         }
 
       } else {
+        //this fetches the login information from the database
         const response = await fetch('http://localhost:3001/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

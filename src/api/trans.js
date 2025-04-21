@@ -18,7 +18,8 @@ router.get('/', authenticateToken, (req, res) => { //authentication token used t
   });
 });
 
-
+//this is the post method, it creates a new transaction
+//it uses the authentication token to ensure the user is logged in
 router.post('/', authenticateToken, (req, res) => {
   const { amount, description, date } = req.body;
   const userId = req.user.id;
@@ -26,7 +27,7 @@ router.post('/', authenticateToken, (req, res) => {
 
   db.run(
     `INSERT INTO transactions (amount, description, date, user_id) VALUES (?, ?, ?, ?)`,
-    [amount, description, date, userId],
+    [amount, description, date, userId],//it gets the userID from the user token and auto assigns the userid field
     function (err) {
       if (err) {
         console.error('Database insertion error:', err);
@@ -47,7 +48,7 @@ router.post('/', authenticateToken, (req, res) => {
     }
   );
 });
-
+//this is the put method, it updates a transaction
 router.put('/:transactionId', authenticateToken, (req, res) => { 
   const { transactionId } = req.params;
   const { amount, description, date } = req.body;
@@ -66,7 +67,7 @@ router.put('/:transactionId', authenticateToken, (req, res) => {
         if (err) {
           console.error(err);
           return res.status(500).json({ error: 'Database error' });
-        }
+        }//this retrieves the updated transaction
         db.get('SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ?', [transactionId], (getError, updatedRow) => {
           if (getError) {
             console.error(getError);

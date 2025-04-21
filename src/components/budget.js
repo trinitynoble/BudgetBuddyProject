@@ -2,13 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import './budget.css'; 
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
-
+//the state variables for budget
 const BudgetHistory = () => {
   const [Budget, setBudget] = useState([]);
   const [formData, setFormData] = useState({ budgetId: '', budget_amount: '', budget_description: '', user_id: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [editing, setEditing] = useState(false);
-
+//gettinf the user token
   const getUserIdFromToken = () => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -27,7 +27,7 @@ const BudgetHistory = () => {
     const token = localStorage.getItem('token');
     return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
   };
-
+//this fetches the budget from the database
   const fetchBudget = useCallback(async () => {
     try {
       const response = await axios.get('http://localhost:3001/api/budget', getAuthHeader());
@@ -37,19 +37,19 @@ const BudgetHistory = () => {
       console.error('Failed to fetch budget:', err);
     }
   }, []);
-
+//this is the useEffect that runs when the component mounts
   useEffect(() => {
     console.log('Fetching budget on mount...');
     const token = localStorage.getItem('token');
     console.log('Token on mount:', token);
     fetchBudget();
   }, [fetchBudget]);
-
+//this is the update
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
+//submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     const userId = getUserIdFromToken();
@@ -61,6 +61,7 @@ const BudgetHistory = () => {
     try {
       const budgetData = { ...formData, user_id: userId };
       let response;
+      //this is the edit, it updates the budget based on user input, it uses axios to send the data to the db through the api
       if (editing) {
         response = await axios.put(`http://localhost:3001/api/budget/${formData.budgetId}`, budgetData, getAuthHeader());
         console.log('API Response (Update):', response.data);
@@ -95,7 +96,7 @@ const BudgetHistory = () => {
       console.error('Error deleting budget:', err);
     }
   };
-
+//this is the search
     const filteredBudget = Budget.filter((b) =>
     b.budgetId?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.budget_amount?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||

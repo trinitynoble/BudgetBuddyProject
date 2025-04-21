@@ -1,6 +1,6 @@
 import React from 'react';
 import './dashboard.css';
-
+//this is just a simple, placeholder dashboard.
 const getAuthHeader = () => {
     const token = localStorage.getItem('token');
     return token ? { headers: { Authorization: `Bearer ${token}` } } : {};

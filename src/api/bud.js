@@ -3,7 +3,7 @@ import authenticateToken from '../../middleware/authMiddleware.js';
 import db from '../database.js'; 
 
 const router = express.Router();
-
+//this is what gets the token to ensure that the user is logged in
 router.get('/', authenticateToken, (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -21,6 +21,7 @@ router.get('/', authenticateToken, (req, res) => {
   router.post('/', authenticateToken, (req, res) => {
     const { budget_amount, budget_description } = req.body;
     const userId = req.user.id;
+    //this is for the insert, this outputs the data recieved in the console
     console.log("Received data for new budget:", { ...req.body, userId });
   
     db.run(
@@ -34,7 +35,7 @@ router.get('/', authenticateToken, (req, res) => {
           }
           return res.status(500).json({ error: 'Database error', details: err.message });
         }
-  
+  //this displays the newly created budget
         db.get('SELECT budgetId, budget_amount, budget_description, user_id FROM Budget WHERE budgetId = ?', [this.lastID], (getError, row) => {
           if (getError) {
             console.error('Database retrieval error:', getError);
@@ -83,6 +84,7 @@ router.put('/:budgetId', authenticateToken, (req, res) => {
     );
   });
 });
+
   router.delete('/:budgetId', authenticateToken, (req, res) => { 
     const { budgetId } = req.params;
     const currentUserId = req.user.id;
@@ -90,7 +92,7 @@ router.put('/:budgetId', authenticateToken, (req, res) => {
       if (err) {
         return res.status(500).json({ error: 'Database error' });
       }
-      if (!row || row.user_id !== currentUserId) {
+      if (!row || row.user_id !== currentUserId) {//this makes it so that you cant delete someone elses budget
         return res.status(403).json({ error: 'Unauthorized to delete this budget.' });
       }
       db.run(
@@ -106,6 +108,7 @@ router.put('/:budgetId', authenticateToken, (req, res) => {
       );
     });
   });
+  //this is the search
   router.get('/:budgetId', authenticateToken, (req, res) => { 
     const { budgetId } = req.params;
     const userId = req.user.id;

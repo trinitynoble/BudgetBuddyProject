@@ -4,6 +4,7 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 const TransactionHistory = () => {
+  //these are the state variables for the transactions
   const [transactions, setTransactions] = useState([]);
   const [formData, setFormData] = useState({ transactionId: '', date: '', amount: '', description: '', user_id: '' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,12 +22,12 @@ const TransactionHistory = () => {
       }
       return null;
     };
-  
+  //gets the token to ensure user is logged in
     const getAuthHeader = () => {
       const token = localStorage.getItem('token');
       return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
     };
-    const fetchTransactions = React.useCallback(async () => {
+    const fetchTransactions = React.useCallback(async () => {//this gets the transactions from the database
       try {
         const response = await axios.get('http://localhost:3001/api/transactions', getAuthHeader());
         setTransactions(response.data);
@@ -41,7 +42,7 @@ const TransactionHistory = () => {
       console.log('Token on mount:', token);
       fetchTransactions();
     }, [fetchTransactions]);
-  
+  //this is the edit
     const handleChange = (e) => {
       const { name, value } = e.target;
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -58,6 +59,7 @@ const TransactionHistory = () => {
         const transactionData = { ...formData, user_id: userId };
         let response;
         if (editing) {
+          //axios is used to connect to the backend, or the api, in order to create, update, or delete transactions
           response = await axios.put(`http://localhost:3001/api/transactions/${formData.transactionId}`, transactionData, getAuthHeader());
           console.log('API Response (Update):', response.data);
           setTransactions(prevTransactions =>
@@ -87,6 +89,7 @@ const TransactionHistory = () => {
         console.error('Error deleting transaction:', err);
       }
     };
+    //this is the search, and it isnt case sensitive
       const filteredTransactions = transactions.filter((t) =>
       t.transactionId?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.date.toLowerCase().includes(searchTerm.toLowerCase()) ||

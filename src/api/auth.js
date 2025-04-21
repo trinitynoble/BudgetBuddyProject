@@ -12,12 +12,12 @@ const SECRET = 'p@ssw0rd';
 // REGISTER
 router.post('/register', async (req, res) => {
   const { user_firstname, user_lastname, user_email, user_phonenumber, user_password } = req.body;
-
+//this checks if any of the fields are empty
   if (!user_firstname || !user_lastname || !user_email || !user_phonenumber || !user_password) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
-  try {
+  try {//this hashes the paswword
     const hash = await bcrypt.hash(user_password, 10);
 
     db.run(
@@ -50,12 +50,12 @@ router.post('/login', (req, res) => {
     if (!user_email || !user_password) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
-  
+  //this is what gets the specific user based off of the email address provided
     db.get(`SELECT * FROM users WHERE user_email = ?`, [user_email], async (err, user) => {
       if (err || !user) {
         return res.status(401).json({ error: 'Invalid email or password.' });
       }
-  
+  //this checks if the email address and the password match
       const match = await bcrypt.compare(user_password, user.user_password);
       if (!match) {
         return res.status(401).json({ error: 'Invalid email or password.' });
