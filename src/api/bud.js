@@ -35,7 +35,7 @@ router.get('/', authenticateToken, (req, res) => {
           return res.status(500).json({ error: 'Database error', details: err.message });
         }
   
-        db.get('SELECT budgetId, budget_amount, budget_description,  user_id FROM Budget WHERE budgetId = ?', [this.lastID], (getError, row) => {
+        db.get('SELECT budgetId, budget_amount, budget_description, user_id FROM Budget WHERE budgetId = ?', [this.lastID], (getError, row) => {
           if (getError) {
             console.error('Database retrieval error:', getError);
             return res.status(500).json({ error: 'Failed to retrieve the newly created Budget', details: getError.message });
@@ -46,7 +46,6 @@ router.get('/', authenticateToken, (req, res) => {
       }
     );
   });
-// filepath: /Users/trinitynoble/Documents/BudgetBuddyProject/src/api/bud.js
 router.put('/:budgetId', authenticateToken, (req, res) => {
   const { budgetId } = req.params;
   const { budget_amount, budget_description } = req.body;
@@ -107,6 +106,20 @@ router.put('/:budgetId', authenticateToken, (req, res) => {
       );
     });
   });
+  router.get('/:budgetId', authenticateToken, (req, res) => { 
+    const { budgetId } = req.params;
+    const userId = req.user.id;
+    db.get('SELECT budgetId, budget_amount, budget_description, user_id FROM Budget WHERE budgetId = ? AND user_id = ?', [budgetId, userId], (err, row) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (!row) {
+        return res.status(404).json({ message: 'Budget not found or unauthorized.' });
+      }
+      res.json(row);
+    });
+  });
+  
   router.get('/search', authenticateToken, (req, res) => { 
     const { query } = req.query;
     const userId = req.user.id;
@@ -115,7 +128,7 @@ router.put('/:budgetId', authenticateToken, (req, res) => {
     }
     const searchTerm = `%${query}%`;
     db.all(
-      `SELECT budgetId, budget_amount, budget_description, user_id FROM Budget WHERE user_id = ? AND (budget_description LIKE ? OR budget_amount LIKE ?)`,
+      `SELECT budgetId , budget_amount, budget_description, user_id FROM Budget WHERE user_id = ? AND (budget_description LIKE ? OR budget_amount LIKE ?)`,
       [userId, searchTerm, searchTerm],
       (err, rows) => {
         if (err) {
