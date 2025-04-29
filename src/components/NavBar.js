@@ -11,9 +11,12 @@ function NavBar() {
   const closeMobileMenu = () => setClick(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); //remove the token from local storage after logged out
-    navigate('/signin'); //eedirect the user to the sign-in page
-    closeMobileMenu(); //close the mobile menu if it's open
+    const confirmed = window.confirm('Are you sure you want to log out?');
+    if (confirmed) {
+      localStorage.removeItem('token'); // remove the token from local storage after logged out
+      navigate('/signin'); // redirect the user to the sign-in page
+      closeMobileMenu(); // close the mobile menu if it's open
+    }
   };
 
   // Function to check if the user is logged in (token exists)

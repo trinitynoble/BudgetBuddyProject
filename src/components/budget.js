@@ -77,7 +77,7 @@ const BudgetHistory = () => {
       setEditing(false);
       fetchBudget(); //refetch all budget after creating/updating
     } catch (err) {
-      console.error('Error saving transaction:', err);
+      console.error('Error saving budget:', err);
     }
   };
 
@@ -88,6 +88,8 @@ const BudgetHistory = () => {
   };
 
   const handleDelete = async (budgetId) => {
+    const confirmed = window.confirm('Are you sure you want to delete this budget?');
+    if (!confirmed) return;
     try {
       console.log('Deleting budget with ID:', budgetId);
       await axios.delete(`http://localhost:3001/api/budget/${budgetId}`, getAuthHeader());

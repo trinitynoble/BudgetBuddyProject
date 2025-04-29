@@ -1,339 +1,108 @@
-const request = require('supertest');
-const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const db = require('./database.js'); 
-const authenticateToken = require('../middleware/authMiddleware.js'); 
+import express from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import cors from 'cors';
+import transactionRoutes from './api/trans.js'; 
+import budgetRoutes from './api/bud.js';
+import authenticateToken from '../middleware/authMiddleware.js'; 
+import db from './database.js';
 
-//Mock dependencies
-jest.mock('bcrypt');
-jest.mock('jsonwebtoken');
-jest.mock('cors');
-jest.mock('./database.js');
-jest.mock('../middleware/authMiddleware.js');
+const PORT = 3001;
+const app = express();
 
-let app;
-const SECRET = 'p@ssw0rd';
+const SECRET = 'p@ssw0rd'; //i know this is not a good practice, but since this is a test project, i will leave it like this for now
 
-beforeAll(() => {
-    app = express();
-    app.use(cors());
-    app.use(express.json());
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}
+app.use(cors(corsOptions));
+app.use(express.json());
 
-    //define the routes directly on the app instance for testing
-    app.post('/api/register', async (req, res) => {
-        const { user_firstname, user_lastname, user_email, user_phonenumber, user_password } = req.body;
-        if (!user_firstname || !user_lastname || !user_email || !user_phonenumber || !user_password) {
-            return res.status(400).json({ error: 'All fields are required.' });
+app.use('/api/budget', authenticateToken, budgetRoutes); //authentication token used to ensure user is logged in
+app.use('/api/transactions', authenticateToken, transactionRoutes); 
+
+app.post('/api/register', async (req, res) => {
+  const { user_firstname, user_lastname, user_email, user_phonenumber, user_password } = req.body;
+
+  if (!user_firstname || !user_lastname || !user_email || !user_phonenumber || !user_password) {
+    return res.status(400).json({ error: 'All fields are required.' });
+  }
+
+  try {
+    db.get(`SELECT * FROM users WHERE user_email = ?`, [user_email], async (err, existingUser) => {
+      if (err) {
+        console.error('DB Lookup Error:', err.message);
+        return res.status(500).json({ error: 'Database error.' });
+      }
+      if (existingUser) {
+        return res.status(400).json({ error: 'Email already registered.' });
+      }
+      const hash = await bcrypt.hash(user_password, 10);
+      db.run(
+        `INSERT INTO users (user_firstname, user_lastname, user_email, user_phonenumber, user_password) VALUES (?, ?, ?, ?, ?)`,
+        [user_firstname, user_lastname, user_email, user_phonenumber, hash],
+        function (err) {
+          if (err) {
+            console.error(' DB Insert Error:', err.message);
+            return res.status(500).json({ error: 'Registration failed.' });
+          }
+          res.json({ id: this.lastID, user_firstname, user_lastname, user_email, user_phonenumber });
         }
-        try {
-            db.get.mockImplementationOnce((sql, params, callback) => {
-                callback(null, null); //mock no existing user
-            });
-            bcrypt.hash.mockResolvedValue('hashedPassword');
-            db.run.mockImplementationOnce(function (sql, params, callback) {
-                callback.call({ lastID: 1 }, null);
-            });
-            res.json({ id: 1, user_firstname, user_lastname, user_email, user_phonenumber });
-        } catch (err) {
-            res.status(500).json({ error: 'Server error' });
-        }
+      );
     });
-
-    app.post('/api/login', (req, res) => {
-        const { user_email, user_password } = req.body;
-        if (!user_email || !user_password) {
-            return res.status(400).json({ error: 'Email and password are required.' });
-        }
-        db.get.mockImplementationOnce((sql, params, callback) => {
-            callback(null, { user_id: 1, user_email: user_email, user_password: 'hashedPassword' });
-        });
-        bcrypt.compare.mockResolvedValue(true);
-        jwt.sign.mockReturnValue('mockedToken');
-        res.json({ token: 'mockedToken', user: { id: 1, user_email } });
-    });
-
-    app.get('/api/profile', authenticateToken, (req, res) => {
-        res.json({ message: `Welcome, test@example.com!`, user: { id: 1, email: 'test@example.com' } });
-    });
-
-    //mock the middleware to always pass for simplicity in these tests
-    authenticateToken.mockImplementation((req, res, next) => {
-        req.user = { id: 1, email: 'test@example.com' };
-        next();
-    });
+  } catch (err) {
+    console.error('Register Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-beforeEach(() => {
-    //reset mocks before each test
-    bcrypt.hash.mockReset();
-    bcrypt.compare.mockReset();
-    jwt.sign.mockReset();
-    db.run.mockReset();
-    db.get.mockReset();
-    authenticateToken.mockClear();
+app.post('/api/login', (req, res) => {
+  const { user_email, user_password } = req.body;
+
+  if (!user_email || !user_password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  db.get(`SELECT * FROM users WHERE user_email = ?`, [user_email], async (err, user) => {
+    if (err) {
+      console.error('DB Lookup Error:', err.message);
+      return res.status(500).json({ error: 'Database error.' });
+    }
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+    const match = await bcrypt.compare(user_password, user.user_password);
+    if (!match) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+    const token = jwt.sign({ id: user.user_id, email: user.user_email }, SECRET, { expiresIn: '1h' });
+    res.json({ token, user: { id: user.user_id, user_firstname: user.user_firstname, user_lastname: user.user_lastname, user_email: user.user_email, user_phonenumber: user.user_phonenumber } });
+  });
 });
-//creating the tests for the server endpoints
-describe('Server API Endpoints', () => {
-    describe('/api/register', () => {
-        it('should register a new user successfully', async () => {
-            const newUser = {
-                user_firstname: 'Test',
-                user_lastname: 'User',
-                user_email: 'test@example.com',
-                user_phonenumber: '000-000-0000',
-                user_password: 'testpassword',
-            };
-            bcrypt.hash.mockResolvedValue('hashedPassword');
-            db.get.mockImplementationOnce((sql, params, callback) => callback(null, null)); //if there is no existing user
-            db.run.mockImplementationOnce((sql, params, callback) => callback.call({ lastID: 1 }, null));
 
-            const response = await request(app)
-                .post('/api/register')
-                .send(newUser);
+app.get('/api/profile', authenticateToken, (req, res) => {
+  res.json({ message: `Welcome, ${req.user.email}!`, user: req.user });
+});
 
-            expect(response.statusCode).toBe(200);
-            expect(response.body).toEqual({
-                id: 1,
-                user_firstname: newUser.user_firstname,
-                user_lastname: newUser.user_lastname,
-                user_email: newUser.user_email,
-                user_phonenumber: newUser.user_phonenumber,
-            });
-            expect(bcrypt.hash).toHaveBeenCalledWith(newUser.user_password, 10);
-            expect(db.run).toHaveBeenCalledWith(//a mock for the insert
-                `INSERT INTO users (user_firstname, user_lastname, user_email, user_phonenumber, user_password) VALUES (?, ?, ?, ?, ?)`,
-                [newUser.user_firstname, newUser.user_lastname, newUser.user_email, newUser.user_phonenumber, 'hashedPassword'],
-                expect.any(Function)
-            );
-        });
+app.get('/', (req, res) => {
+  res.send('API is running!');
+});
 
-        it('should return 400 if any required field is missing', async () => {
-            const incompleteUser = {
-                user_firstname: 'Test',
-                user_lastname: 'User',
-                user_email: 'test@example.com',
-                user_phonenumber: '000-000-0000',
-            };
+app.get('/api/test', (req, res) => {
+  res.status(200).json({ message: 'Server is working' });
+});
 
-            const response = await request(app)
-                .post('/api/register')
-                .send(incompleteUser);
-//making sure all required fields are present
-            expect(response.statusCode).toBe(400);
-            expect(response.body).toEqual({ error: 'All fields are required.' });
-            expect(bcrypt.hash).not.toHaveBeenCalled();
-            expect(db.run).not.toHaveBeenCalled();
-        });
-//this is the test for the duplicate email
-        it('should return 400 if email is already registered', async () => {
-            const newUser = {
-                user_firstname: 'Test',
-                user_lastname: 'User',
-                user_email: 'test@example.com',
-                user_phonenumber: '000-000-0000',
-                user_password: 'testpassword',
-            };
-            db.get.mockImplementationOnce((sql, params, callback) => callback(null, { user_email: newUser.user_email }));
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});
 
-            const response = await request(app)
-                .post('/api/register')
-                .send(newUser);
+process.on('uncaughtException', (err) => {
+  console.error('Unhandled exception:', err);
+});
 
-            expect(response.statusCode).toBe(400);
-            expect(response.body).toEqual({ error: 'Email already registered.' });
-            expect(bcrypt.hash).not.toHaveBeenCalled();
-            expect(db.run).not.toHaveBeenCalled();
-        });
-//test for database error
-        it('should return 500 if there is a database error during registration', async () => {
-            const newUser = {
-                user_firstname: 'Test',
-                user_lastname: 'User',
-                user_email: 'test@example.com',
-                user_phonenumber: '000-000-0000',
-                user_password: 'testpassword',
-            };
-            bcrypt.hash.mockResolvedValue('hashedPassword');
-            db.get.mockImplementationOnce((sql, params, callback) => callback(new Error('Database error'), null));
-
-            const response = await request(app)
-                .post('/api/register')
-                .send(newUser);
-
-            expect(response.statusCode).toBe(500);
-            expect(response.body).toEqual({ error: 'Database error.' });
-            expect(bcrypt.hash).toHaveBeenCalled();
-            expect(db.run).not.toHaveBeenCalled();
-        });
-            //test for hashed password
-        it('should return 500 if there is an error during password hashing', async () => {
-            const newUser = {
-                user_firstname: 'Test',
-                user_lastname: 'User',
-                user_email: 'test@example.com',
-                user_phonenumber: '000-000-0000',
-                user_password: 'testpassword',
-            };
-            bcrypt.hash.mockRejectedValue(new Error('Hashing error'));
-
-            const response = await request(app)
-                .post('/api/register')
-                .send(newUser);
-
-            expect(response.statusCode).toBe(500);
-            expect(response.body).toEqual({ error: 'Server error' });
-            expect(bcrypt.hash).toHaveBeenCalledWith(newUser.user_password, 10);
-            expect(db.run).not.toHaveBeenCalled();
-        });
-    });
-//this is the test for the login method 
-    describe('/api/login', () => {
-        it('should login a user successfully and return a token', async () => {
-            const loginCredentials = {
-                user_email: 'test@example.com',
-                user_password: 'testpassword',
-            };
-            db.get.mockImplementationOnce((sql, params, callback) => {
-                callback(null, { user_id: 1, user_email: loginCredentials.user_email, user_password: 'hashedPassword' });
-            });
-            bcrypt.compare.mockResolvedValue(true);//mock token t
-            jwt.sign.mockReturnValue('mockedToken');
-
-            const response = await request(app)
-                .post('/api/login')
-                .send(loginCredentials);
-
-            expect(response.statusCode).toBe(200);
-            expect(response.body).toEqual({
-                token: 'mockedToken',
-                user: { id: 1, user_email: loginCredentials.user_email },
-            });
-            expect(db.get).toHaveBeenCalledWith(
-                `SELECT * FROM users WHERE user_email = ?`,
-                [loginCredentials.user_email],
-                expect.any(Function)
-            );
-            expect(bcrypt.compare).toHaveBeenCalledWith(loginCredentials.user_password, 'hashedPassword');
-            expect(jwt.sign).toHaveBeenCalledWith({ id: 1, email: loginCredentials.user_email }, SECRET, { expiresIn: '1h' });
-        });
-
-        it('should return 400 if email or password is missing', async () => {
-            const incompleteCredentials = {
-                user_email: 'test@example.com',
-            };
-
-            const response = await request(app)
-                .post('/api/login')
-                .send(incompleteCredentials);
-
-            expect(response.statusCode).toBe(400);
-            expect(response.body).toEqual({ error: 'Email and password are required.' });
-            expect(db.get).not.toHaveBeenCalled();
-            expect(bcrypt.compare).not.toHaveBeenCalled();
-            expect(jwt.sign).not.toHaveBeenCalled();
-        });
-
-        it('should return 401 for invalid email or password (user not found)', async () => {
-            const loginCredentials = {
-                user_email: 'nonexistent@example.com',
-                user_password: 'testpassword',
-            };
-            db.get.mockImplementationOnce((sql, params, callback) => callback(null, null));
-
-            const response = await request(app)
-                .post('/api/login')
-                .send(loginCredentials);
-
-            expect(response.statusCode).toBe(401);
-            expect(response.body).toEqual({ error: 'Invalid email or password.' });
-            expect(db.get).toHaveBeenCalledWith(
-                `SELECT * FROM users WHERE user_email = ?`,
-                [loginCredentials.user_email],
-                expect.any(Function)
-            );
-            expect(bcrypt.compare).not.toHaveBeenCalled();
-            expect(jwt.sign).not.toHaveBeenCalled();
-        });
-
-        it('should return 401 for invalid email or password (incorrect password)', async () => {
-            const loginCredentials = {
-                user_email: 'test@example.com',
-                user_password: 'wrongpassword',
-            };
-            db.get.mockImplementationOnce((sql, params, callback) => {
-                callback(null, { user_id: 1, user_email: loginCredentials.user_email, user_password: 'hashedPassword' });
-            });
-            bcrypt.compare.mockResolvedValue(false);
-
-            const response = await request(app)
-                .post('/api/login')
-                .send(loginCredentials);
-
-            expect(response.statusCode).toBe(401);
-            expect(response.body).toEqual({ error: 'Invalid email or password.' });
-            expect(db.get).toHaveBeenCalledWith(
-                `SELECT * FROM users WHERE user_email = ?`,
-                [loginCredentials.user_email],
-                expect.any(Function)
-            );
-            expect(bcrypt.compare).toHaveBeenCalledWith(loginCredentials.user_password, 'hashedPassword');
-            expect(jwt.sign).not.toHaveBeenCalled();
-        });
-
-        it('should return 500 for database error during login', async () => {
-            const loginCredentials = {
-                user_email: 'test@example.com',
-                user_password: 'testpassword',
-            };
-            db.get.mockImplementationOnce((sql, params, callback) => callback(new Error('Database error'), null));
-
-            const response = await request(app)
-                .post('/api/login')
-                .send(loginCredentials);
-
-            expect(response.statusCode).toBe(500);
-            expect(response.body).toEqual({ error: 'Database error.' });
-            expect(db.get).toHaveBeenCalledWith(
-                `SELECT * FROM users WHERE user_email = ?`,
-                [loginCredentials.user_email],
-                expect.any(Function)
-            );
-            expect(bcrypt.compare).not.toHaveBeenCalled();
-            expect(jwt.sign).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('/api/profile', () => {
-        it('should return user profile data if authenticated', async () => {
-            const response = await request(app)
-                .get('/api/profile')
-                .set('Authorization', 'Bearer mockedToken'); // Mocked token will be passed by the middleware mock
-
-            expect(response.statusCode).toBe(200);
-            expect(response.body).toEqual({ message: 'Welcome, test@example.com!', user: { id: 1, email: 'test@example.com' } });
-            expect(authenticateToken).toHaveBeenCalled();
-        });
-    });
-
-    describe('/api/test', () => {
-        it('should return a 200 status and a success message', async () => {
-            const response = await request(app)
-                .get('/api/test');
-
-            expect(response.statusCode).toBe(200);
-            expect(response.body).toEqual({ message: 'Server is working' });
-        });
-    });
-
-    describe('/', () => {
-        it('should return a 200 status and the API running message', async () => {
-            const response = await request(app)
-                .get('/');
-
-            expect(response.statusCode).toBe(200);
-            expect(response.text).toBe('API is running!');
-        });
-    });
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled rejection:', reason);
 });

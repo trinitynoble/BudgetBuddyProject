@@ -9,94 +9,105 @@ const TransactionHistory = () => {
   const [formData, setFormData] = useState({ transactionId: '', date: '', amount: '', description: '', user_id: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [editing, setEditing] = useState(false);
-    const getUserIdFromToken = () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const decodedToken = jwtDecode(token);
-          return decodedToken.id;
-        } catch (error) {
-          console.error('Error decoding token:', error);
-          return null;
-        }
+
+  const getUserIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        return decodedToken.id;
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        return null;
       }
-      return null;
-    };
+    }
+    return null;
+  };
+
   //gets the token to ensure user is logged in
-    const getAuthHeader = () => {
-      const token = localStorage.getItem('token');
-      return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-    };
-    const fetchTransactions = React.useCallback(async () => {//this gets the transactions from the database
-      try {
-        const response = await axios.get('http://localhost:3001/api/transactions', getAuthHeader());
-        setTransactions(response.data);
-      } catch (err) {
-        console.error('Failed to fetch transactions:', err);
-      }
-    }, []);
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+  };
+
+  const fetchTransactions = React.useCallback(async () => { //this gets the transactions from the database
+    try {
+      const response = await axios.get('http://localhost:3001/api/transactions', getAuthHeader());
+      setTransactions(response.data);
+    } catch (err) {
+      console.error('Failed to fetch transactions:', err);
+    }
+  }, []);
   
-    useEffect(() => {
-      console.log('Fetching transactions on mount...');
-      const token = localStorage.getItem('token');
-      console.log('Token on mount:', token);
-      fetchTransactions();
-    }, [fetchTransactions]);
+  useEffect(() => {
+    console.log('Fetching transactions on mount...');
+    const token = localStorage.getItem('token');
+    console.log('Token on mount:', token);
+    fetchTransactions();
+  }, [fetchTransactions]);
+
   //this is the edit
-    const handleChange = (e) => {
-      const { name, value } = e.target;
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-      const handleSubmit = async (e) => {
-      e.preventDefault();
-      const userId = getUserIdFromToken();
-      if (!userId) {
-        alert('User not authenticated.');
-        return;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      alert('User not authenticated.');
+      return;
+    }
+
+    try {
+      const transactionData = { ...formData, user_id: userId };
+      let response;
+      if (editing) {
+        //axios is used to connect to the backend, or the api, in order to create, update, or delete transactions
+        response = await axios.put(`http://localhost:3001/api/transactions/${formData.transactionId}`, transactionData, getAuthHeader());
+        console.log('API Response (Update):', response.data);
+        setTransactions(prevTransactions =>
+          prevTransactions.map(transaction =>
+            transaction.transactionId === response.data.transactionId ? response.data : transaction
+          )
+        );
+      } else {
+        await axios.post('http://localhost:3001/api/transactions/', transactionData, getAuthHeader());
       }
-    
-      try {
-        const transactionData = { ...formData, user_id: userId };
-        let response;
-        if (editing) {
-          //axios is used to connect to the backend, or the api, in order to create, update, or delete transactions
-          response = await axios.put(`http://localhost:3001/api/transactions/${formData.transactionId}`, transactionData, getAuthHeader());
-          console.log('API Response (Update):', response.data);
-          setTransactions(prevTransactions =>
-            prevTransactions.map(transaction =>
-              transaction.transactionId === response.data.transactionId ? response.data : transaction
-            )
-          );
-        } else {
-          await axios.post('http://localhost:3001/api/transactions/', transactionData, getAuthHeader());
-        }
-        setFormData({ transactionId: '', date: '', amount: '', description: '', user_id: '' });
-        setEditing(false);
-        fetchTransactions(); //refetch all transactions after creating/updating
-      } catch (err) {
-        console.error('Error saving transaction:', err);
-      }
-    };
-      const handleEdit = (transaction) => {
-      setFormData(transaction);
-      setEditing(true);
-    };
-      const handleDelete = async (transactionId) => {
-      try {
-        await axios.delete(`http://localhost:3001/api/transactions/${transactionId}`, getAuthHeader());
-        fetchTransactions();
-      } catch (err) {
-        console.error('Error deleting transaction:', err);
-      }
-    };
-    //this is the search, and it isnt case sensitive
-      const filteredTransactions = transactions.filter((t) =>
-      t.transactionId?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.amount?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.user_id?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      setFormData({ transactionId: '', date: '', amount: '', description: '', user_id: '' });
+      setEditing(false);
+      fetchTransactions(); //refetch all transactions after creating/updating
+    } catch (err) {
+      console.error('Error saving transaction:', err);
+    }
+  };
+
+  const handleEdit = (transaction) => {
+    setFormData(transaction);
+    setEditing(true);
+  };
+
+  const handleDelete = async (transactionId) => {
+    const confirmed = window.confirm('Are you sure you want to delete this transaction?');
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(`http://localhost:3001/api/transactions/${transactionId}`, getAuthHeader());
+      fetchTransactions();
+    } catch (err) {
+      console.error('Error deleting transaction:', err);
+    }
+  };
+
+  //this is the search, and it isnt case sensitive
+  const filteredTransactions = transactions.filter((t) =>
+    t.transactionId?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.amount?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.user_id?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="transactions-container">
@@ -111,24 +122,25 @@ const TransactionHistory = () => {
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-<form onSubmit={handleSubmit} className="transaction-form">
-  <div className="form-row">
-    <div className="input-group">
-      <label htmlFor="date">Date:</label>
-      <input name="date" type="date" id="date" className='input-boxes' value={formData.date} onChange={handleChange} required />
-    </div>
-    <div className="input-group">
-      <label htmlFor="amount">Amount:</label>
-      <input name="amount" type="number" id="amount" className='input-boxes' placeholder='Amount' value={formData.amount} onChange={handleChange} required />
-    </div>
-    <div className="input-group">
-      <label htmlFor="description">Description:</label>
-      <input name="description" type="text" id="description" className='input-boxes' placeholder='Description' value={formData.description} onChange={handleChange} required />
-    </div>
-    {editing && <input name="transactionId" type="hidden" value={formData.transactionId} />}
-  </div>
-  <button type="submit" className='create-button'>{editing ? 'Update' : 'Create'} Transaction</button>
-</form>
+      <form onSubmit={handleSubmit} className="transaction-form">
+        <div className="form-row">
+          <div className="input-group">
+            <label htmlFor="date">Date:</label>
+            <input name="date" type="date" id="date" className='input-boxes' value={formData.date} onChange={handleChange} required />
+          </div>
+          <div className="input-group">
+            <label htmlFor="amount">Amount:</label>
+            <input name="amount" type="number" id="amount" className='input-boxes' placeholder='Amount' value={formData.amount} onChange={handleChange} required />
+          </div>
+          <div className="input-group">
+            <label htmlFor="description">Description:</label>
+            <input name="description" type="text" id="description" className='input-boxes' placeholder='Description' value={formData.description} onChange={handleChange} required />
+          </div>
+          {editing && <input name="transactionId" type="hidden" value={formData.transactionId} />}
+        </div>
+        <button type="submit" className='create-button'>{editing ? 'Update' : 'Create'} Transaction</button>
+      </form>
+
       {/* Table */}
       <table className="transactions-table">
         <thead>
@@ -151,8 +163,8 @@ const TransactionHistory = () => {
                 <td>{t.description}</td>
                 <td>{t.user_id}</td>
                 <td>
-                  <button className='update-button'onClick={() => handleEdit(t)}>Edit</button>
-                  <button className='delete-button'onClick={() => handleDelete(t.transactionId)}>Delete</button>
+                  <button className='update-button' onClick={() => handleEdit(t)}>Edit</button>
+                  <button className='delete-button' onClick={() => handleDelete(t.transactionId)}>Delete</button>
                 </td>
               </tr>
             ))

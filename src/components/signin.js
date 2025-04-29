@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import './signin.css';
 import 'boxicons/css/boxicons.min.css';
 
 function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const containerRef = useRef(null);
-  const navigate = useNavigate(); 
-//this makes the registration form blank
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     firstname: '',
     lastname: '',
@@ -17,28 +17,109 @@ function AuthForm() {
     confirmPassword: '',
   });
 
+  const [errors, setErrors] = useState({
+    firstname: '',
+    lastname: '',
+    email: '',
+    phonenumber: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
+
   const toggle = () => {
     setIsSignUp((prev) => !prev);
+    setFormData({
+      firstname: '',
+      lastname: '',
+      email: '',
+      phonenumber: '',
+      password: '',
+      confirmPassword: '',
+    });
+    setErrors({
+      firstname: '',
+      lastname: '',
+      email: '',
+      phonenumber: '',
+      password: '',
+      confirmPassword: '',
+    });
   };
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value,
+    });
+    setErrors({
+      ...errors,
+      [name]: '', //clear the error(s) for the changed input
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
+    const validationErrors = {};
+    const nameMinLength = 2;
+    const emailMinLength = 8;
+    const phoneMinLength = 10;
+    const passwordMinLength = 8;
+    if (isSignUp){
+    //setting errors if the input fields are invalid, for eg if they are empty or too short or if email or password arent correctly formatted
+    if (formData.firstname.length < nameMinLength) {
+      validationErrors.firstname = `First name must be at least ${nameMinLength} characters long.`;
+    }
+    if (formData.lastname.length < nameMinLength) {
+      validationErrors.lastname = `Last name must be at least ${nameMinLength} characters long.`;
+    }
+    if (formData.email.length < emailMinLength) {
+      validationErrors.email = `Email must be at least ${emailMinLength} characters long.`;
+    }
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+      validationErrors.email = 'Email address is invalid.';
+    }
+    if (formData.phonenumber.length < phoneMinLength) {
+      validationErrors.phonenumber = `Phone number must be at least ${phoneMinLength} digits long.`;
+    }
+    if (formData.password.length < passwordMinLength) {
+      validationErrors.password = `Password must be at least ${passwordMinLength} characters long.`;
+    }
+    if (formData.password && !/^(?=.*[a-z])(?=.*\d).{8,}$/.test(formData.password)) {
+      validationErrors.password = 'Password must be at least 8 characters and include one lowercase letter and one number.';
+    }
+    if (isSignUp) {
+      if (formData.confirmPassword !== formData.password) {
+        validationErrors.confirmPassword = "Passwords do not match.";
+      } else if (formData.confirmPassword.length < passwordMinLength) {
+        validationErrors.confirmPassword = `Confirm password must be at least ${passwordMinLength} characters long.`;
+      }
+    }
+  } else {
+    if (formData.email.length === 0) {
+      validationErrors.email = 'Email is required.';
+    }
+    if (formData.password.length === 0) {
+      validationErrors.password = 'Password is required.';
+    }
+  }
+
+    setErrors(validationErrors);
+
+    // if there are any validation errors, show a popup
+    if (Object.keys(validationErrors).length > 0) {
+      const errorMessage = Object.values(validationErrors).join('\n');
+      setPopupMessage(errorMessage);
+      setShowPopup(true);
+      return;
+    }
 
     try {
       if (isSignUp) {
-        if (formData.password !== formData.confirmPassword) {
-          alert("Passwords do not match.");
-          return;
-        }
-//this is the registration form, it takes the information inputted from users and attaches it to the database.
         const response = await fetch('http://localhost:3001/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -58,9 +139,7 @@ function AuthForm() {
         } else {
           alert(result.error || 'Registration failed');
         }
-
       } else {
-        //this fetches the login information from the database
         const response = await fetch('http://localhost:3001/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -73,7 +152,7 @@ function AuthForm() {
         const result = await response.json();
         if (response.ok) {
           alert('Login successful!');
-          localStorage.setItem('token', result.token); 
+          localStorage.setItem('token', result.token);
           navigate('/transactions');
         } else {
           alert(result.error || 'Login failed');
@@ -85,6 +164,10 @@ function AuthForm() {
     }
   };
 
+  const closePopup = () => {
+    setShowPopup(false);
+    setPopupMessage('');
+  };
 
   useEffect(() => {
     const container = containerRef.current;
@@ -105,13 +188,25 @@ function AuthForm() {
     container.classList.toggle('sign-up', isSignUp);
   }, [isSignUp]);
 
+  //setting up the maximum length of the input fields
+  const nameMaxLength = 20;
+  const emailMaxLength = 40;
+  const phoneMaxLength = 10;
+  const passwordMaxLength = 30;
+
   return (
     <div ref={containerRef} id="container" className="container">
+      {showPopup && (
+        <div className="popup">
+          <p>{popupMessage}</p>
+          <button onClick={closePopup}>Close</button>
+        </div>
+      )}
       <div className="row">
         {/* SIGN UP */}
         <div className="col align-items-center flex-col sign-up">
           <div className="form-wrapper align-items-center">
-            <form className="form sign-up" onSubmit={handleSubmit} method = "POST">
+            <form className="form sign-up" onSubmit={handleSubmit} method="POST">
               <div className="input-group">
                 <i className="bx bxs-user"></i>
                 <input
@@ -120,6 +215,7 @@ function AuthForm() {
                   placeholder="John"
                   value={formData.firstname}
                   onChange={handleInputChange}
+                  maxLength={nameMaxLength}
                 />
               </div>
               <div className="input-group">
@@ -130,6 +226,7 @@ function AuthForm() {
                   placeholder="Doe"
                   value={formData.lastname}
                   onChange={handleInputChange}
+                  maxLength={nameMaxLength}
                 />
               </div>
               <div className="input-group">
@@ -140,6 +237,7 @@ function AuthForm() {
                   placeholder="Email"
                   value={formData.email}
                   onChange={handleInputChange}
+                  maxLength={emailMaxLength}
                 />
               </div>
               <div className="input-group">
@@ -150,6 +248,7 @@ function AuthForm() {
                   placeholder="000-000-0000"
                   value={formData.phonenumber}
                   onChange={handleInputChange}
+                  maxLength={phoneMaxLength}
                 />
               </div>
               <div className="input-group">
@@ -160,6 +259,7 @@ function AuthForm() {
                   placeholder="Password"
                   value={formData.password}
                   onChange={handleInputChange}
+                  maxLength={passwordMaxLength}
                 />
               </div>
               <div className="input-group">
@@ -170,6 +270,7 @@ function AuthForm() {
                   placeholder="Confirm password"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
+                  maxLength={passwordMaxLength}
                 />
               </div>
               <button type="submit">Sign up</button>
@@ -193,6 +294,7 @@ function AuthForm() {
                   placeholder="Email Address"
                   value={formData.email}
                   onChange={handleInputChange}
+                  maxLength={emailMaxLength}
                 />
               </div>
               <div className="input-group">
@@ -203,6 +305,7 @@ function AuthForm() {
                   placeholder="Password"
                   value={formData.password}
                   onChange={handleInputChange}
+                  maxLength={passwordMaxLength}
                 />
               </div>
               <button type="submit">Sign in</button>
