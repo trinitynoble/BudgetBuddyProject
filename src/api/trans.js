@@ -103,21 +103,6 @@ router.delete('/:transactionId', authenticateToken, (req, res) => {
     );
   });
 });
-
-router.get('/:transactionId', authenticateToken, (req, res) => { 
-  const { transactionId } = req.params;
-  const userId = req.user.id;
-  db.get('SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ? AND user_id = ?', [transactionId, userId], (err, row) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!row) {
-      return res.status(404).json({ message: 'Transaction not found or unauthorized.' });
-    }
-    res.json(row);
-  });
-});
-
 router.get('/search', authenticateToken, (req, res) => { 
   const { query } = req.query;
   const userId = req.user.id;
@@ -136,5 +121,20 @@ router.get('/search', authenticateToken, (req, res) => {
     }
   );
 });
+
+router.get('/:transactionId', authenticateToken, (req, res) => { 
+  const { transactionId } = req.params;
+  const userId = req.user.id;
+  db.get('SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ? AND user_id = ?', [transactionId, userId], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!row) {
+      return res.status(404).json({ message: 'Transaction not found or unauthorized.' });
+    }
+    res.json(row);
+  });
+});
+
 
 export default router;
