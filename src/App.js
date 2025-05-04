@@ -4,7 +4,7 @@ import NavBar from './components/NavBar.js';
 import SignIn from './components/signin.js';
 import TransactionHistory from './components/transactions.js';
 import BudgetHistory from './components/budget.js';
-import Dashboard from './components/dashboard.js';
+import Dashboard from './components/dashboard.jsx';
 import ProtectedRoute from './components/ProtectedRoute.js'; 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 

@@ -1,46 +1,58 @@
-.dashboard-container {
+.dashboard {
+    max-width: 700px;
+    margin: 40px auto;
     padding: 20px;
     font-family: sans-serif;
-    background-color: #f4f4f4;
-    min-height: 100vh;
-    overflow-x: auto;
-}
-
-.dashboard-header {
-    color: #333;
+    text-align: left;
+  }
+  
+  .dashboard-title {
+    font-size: 28px;
+    font-weight: bold;
     margin-bottom: 20px;
-    text-align: center;
-    white-space: nowrap;
-}
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(2, auto);
-    gap: 20px;
-    width: fit-content;
-    overflow-x: auto;
-    padding-bottom: 20px;
-}
-
-.dashboard-item {
-    width: 300px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 250px;
-}
-
-.dashboard-item img {
-    width: auto;
-    height: auto;
-    max-width: 100%;
-    max-height: none;
-    display: block;
-    margin: 0 auto;
-}
-
-@media (max-width: 600px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr;
+  }
+  
+  .section {
+    margin-bottom: 30px;
+  }
+  
+  .card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+    background-color: #f9f9f9;
+  }
+  
+  .budget-list {
+    list-style-type: none;
+    padding-left: 0;
+  }
+  
+  .links a {
+    margin-right: 20px;
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  .links a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Spinner styles */
+  .spinner {
+    margin: 100px auto 20px;
+    border: 4px solid #eee;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
-}
+  }
+  

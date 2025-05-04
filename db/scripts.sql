@@ -23,6 +23,7 @@ CREATE TABLE Transactions (
     date DATE NOT NULL);
 DROP TABLE Budget_old;
 
+
 INSERT INTO Users (user_firstname, user_lastname, user_email, user_phonenumber, user_password)
     VALUES
         ("Test", "Test", "Test@gmail.com", "3332224444","Test");

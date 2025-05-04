@@ -4,137 +4,165 @@ import db from '../database.js';
 
 const router = express.Router();
 
-router.get('/', authenticateToken, (req, res) => { //authentication token used to ensure user is logged in 
+// ✅ Get all transactions for logged-in user
+router.get('/', authenticateToken, (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  const userId = req.user.id; //this gets the user's ID from the authentication token and applies it to the insert querries.
-  db.all('SELECT transactionId, amount, description, date, user_id FROM transactions WHERE user_id = ?', [userId], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-    } else {
+  const userId = req.user.id;
+
+  db.all(
+    'SELECT transactionId, amount, description, date, user_id FROM transactions WHERE user_id = ?',
+    [userId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
       res.json(rows);
     }
-  });
+  );
 });
 
-//this is the post method, it creates a new transaction
-//it uses the authentication token to ensure the user is logged in
+router.get('/recent/', authenticateToken, (req, res) => {
+  console.log('/recent endpoint hit');
+  const userId = req.user.id;
+  db.get(
+    `SELECT transactionId, description, amount, date
+     FROM transactions
+     WHERE user_id = ?
+     ORDER BY transactionId DESC
+     LIMIT 1`,
+    [userId],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      if (!row) return res.status(404).json({ message: 'Transaction not found or unauthorized.' });
+      res.json(row);
+    }
+  );
+});
+
+
+
+// ✅ Create transaction
 router.post('/', authenticateToken, (req, res) => {
   const { amount, description, date } = req.body;
   const userId = req.user.id;
-  console.log("Received data for new transaction:", { ...req.body, userId });
 
   db.run(
     `INSERT INTO transactions (amount, description, date, user_id) VALUES (?, ?, ?, ?)`,
-    [amount, description, date, userId],//it gets the userID from the user token and auto assigns the userid field
+    [amount, description, date, userId],
     function (err) {
       if (err) {
-        console.error('Database insertion error:', err);
-        if (err.message.includes('FOREIGN KEY constraint failed')) {
-          return res.status(400).json({ error: 'Invalid user ID. User does not exist.' });
-        }
+        console.error('Insert error:', err.message);
         return res.status(500).json({ error: 'Database error', details: err.message });
       }
-
-      db.get('SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ?', [this.lastID], (getError, row) => {
-        if (getError) {
-          console.error('Database retrieval error:', getError);
-          return res.status(500).json({ error: 'Failed to retrieve the newly created transaction', details: getError.message });
+      db.get(
+        'SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ?',
+        [this.lastID],
+        (getErr, row) => {
+          if (getErr) {
+            return res.status(500).json({ error: 'Failed to retrieve new transaction' });
+          }
+          res.status(201).json(row);
         }
-        console.log('New transaction created:', row);
-        res.status(201).json(row);
-      });
+      );
     }
   );
 });
-//this is the put method, it updates a transaction
-router.put('/:transactionId', authenticateToken, (req, res) => { 
+
+// ✅ Update transaction
+router.put('/:transactionId', authenticateToken, (req, res) => {
   const { transactionId } = req.params;
   const { amount, description, date } = req.body;
   const currentUserId = req.user.id;
-  db.get(`SELECT user_id FROM transactions WHERE transactionId = ?`, [transactionId], (err, row) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!row || row.user_id !== currentUserId) {
-      return res.status(403).json({ error: 'Unauthorized to update this transaction.' });
-    }
-    db.run(
-      `UPDATE transactions SET amount = ?, description = ?,date = ? WHERE transactionId = ?`,
-      [amount, description, date, transactionId],
-      function (err) {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ error: 'Database error' });
-        }//this retrieves the updated transaction
-        db.get('SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ?', [transactionId], (getError, updatedRow) => {
-          if (getError) {
-            console.error(getError);
-            return res.status(500).json({ error: 'Failed to retrieve the updated transaction.' });
-          }
-          res.json(updatedRow);
-        });
+
+  db.get(
+    'SELECT user_id FROM transactions WHERE transactionId = ?',
+    [transactionId],
+    (err, row) => {
+      if (err || !row || row.user_id !== currentUserId) {
+        return res.status(403).json({ error: 'Unauthorized or not found' });
       }
-    );
-  });
+
+      db.run(
+        'UPDATE transactions SET amount = ?, description = ?, date = ? WHERE transactionId = ?',
+        [amount, description, date, transactionId],
+        function (err) {
+          if (err) return res.status(500).json({ error: 'Update failed' });
+
+          db.get(
+            'SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ?',
+            [transactionId],
+            (getErr, updatedRow) => {
+              if (getErr) return res.status(500).json({ error: 'Could not fetch updated transaction' });
+              res.json(updatedRow);
+            }
+          );
+        }
+      );
+    }
+  );
 });
 
-router.delete('/:transactionId', authenticateToken, (req, res) => { 
+// ✅ Delete transaction
+router.delete('/:transactionId', authenticateToken, (req, res) => {
   const { transactionId } = req.params;
   const currentUserId = req.user.id;
-  db.get(`SELECT user_id FROM transactions WHERE transactionId = ?`, [transactionId], (err, row) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!row || row.user_id !== currentUserId) {
-      return res.status(403).json({ error: 'Unauthorized to delete this transaction.' });
-    }
-    db.run(
-      `DELETE FROM transactions WHERE transactionId = ?`,
-      [transactionId],
-      function (err) {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ error: 'Database error' });
-        }
-        res.json({ message: 'Transaction deleted successfully' });
+
+  db.get(
+    'SELECT user_id FROM transactions WHERE transactionId = ?',
+    [transactionId],
+    (err, row) => {
+      if (err || !row || row.user_id !== currentUserId) {
+        return res.status(403).json({ error: 'Unauthorized or not found' });
       }
-    );
-  });
+
+      db.run(
+        'DELETE FROM transactions WHERE transactionId = ?',
+        [transactionId],
+        (err) => {
+          if (err) return res.status(500).json({ error: 'Deletion failed' });
+          res.json({ message: 'Transaction deleted successfully' });
+        }
+      );
+    }
+  );
 });
-router.get('/search', authenticateToken, (req, res) => { 
+
+// ✅ Search transactions
+router.get('/search', authenticateToken, (req, res) => {
   const { query } = req.query;
   const userId = req.user.id;
-  if (!query) {
-    return res.status(400).json({ error: 'Search query is required.' });
-  }
+
+  if (!query) return res.status(400).json({ error: 'Search query required' });
+
   const searchTerm = `%${query}%`;
   db.all(
-    `SELECT transactionId,amount, description, date, user_id FROM transactions WHERE user_id = ? AND (date LIKE ? OR description LIKE ? OR amount LIKE ?)`,
+    `SELECT transactionId, amount, description, date, user_id
+     FROM transactions
+     WHERE user_id = ? AND (description LIKE ? OR amount LIKE ? OR date LIKE ?)`,
     [userId, searchTerm, searchTerm, searchTerm],
     (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error during search.' });
-      }
+      if (err) return res.status(500).json({ error: 'Search failed' });
       res.json(rows);
     }
   );
 });
 
-router.get('/:transactionId', authenticateToken, (req, res) => { 
+// ✅ Get transaction by ID
+router.get('/:transactionId', authenticateToken, (req, res) => {
   const { transactionId } = req.params;
   const userId = req.user.id;
-  db.get('SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ? AND user_id = ?', [transactionId, userId], (err, row) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!row) {
-      return res.status(404).json({ message: 'Transaction not found or unauthorized.' });
-    }
-    res.json(row);
-  });
-});
 
+  db.get(
+    'SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ? AND user_id = ?',
+    [transactionId, userId],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      if (!row) return res.status(404).json({ message: 'Transaction not found' });
+      res.json(row);
+    }
+  );
+});
 
 export default router;
