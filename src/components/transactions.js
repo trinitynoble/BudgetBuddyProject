@@ -45,11 +45,11 @@ const TransactionHistory = () => {
     }
   }, []);
 
-  useEffect(() => {
+  useEffect(() => {//running serverside effects
     fetchTransactions();
   }, [fetchTransactions]);
 
-  const handleChange = (e) => {
+  const handleChange = (e) => {//function to handle form changes
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };

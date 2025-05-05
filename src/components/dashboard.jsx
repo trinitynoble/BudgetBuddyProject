@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import './dashboard.css';
 
 const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token');//gets the token from local storage
   return {
     method: 'GET',
     mode: 'cors',
@@ -13,21 +13,21 @@ const getAuthHeader = () => {
   };
 };
 
-const getGreeting = () => {
+const getGreeting = () => {//this is what gets the greeting message based on the time of day
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';
   if (hour < 18) return 'Good afternoon';
   return 'Good evening';
 };
 
-const messages = [
+const messages = [//list of motivational messages 
   "Let's crush your savings goals 💰",
   "Another day, another dollar 💵",
   "You're doing amazing! 🤑",
   "Keep tracking those expenses! 📊",
 ];
 
-const Dashboard = () => {
+const Dashboard = () => {//this is the dashboard component
   const [username, setUsername] = useState('');
   const [recentTransaction, setRecentTransaction] = useState(null);
   const [budgets, setBudgets] = useState([]);
@@ -36,7 +36,7 @@ const Dashboard = () => {
 const fullMessageRef = useRef(messages[Math.floor(Math.random() * messages.length)]);
 const indexRef = useRef(0);
 
-useEffect(() => {
+useEffect(() => {//this is what gets the motivational message, and makes it display like a typing effect
   const interval = setInterval(() => {
     if (indexRef.current <= fullMessageRef.current.length) {
       const partial = fullMessageRef.current.slice(0, indexRef.current + 1);
@@ -56,7 +56,7 @@ useEffect(() => {
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
-
+//this gets the username and recent transaction
         const userRes = await fetch('http://localhost:3001/api/user', getAuthHeader());
         const userData = await userRes.json();
         setUsername(userData.username);
