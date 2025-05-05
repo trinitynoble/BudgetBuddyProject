@@ -135,7 +135,7 @@ function AuthForm() {
         const result = await response.json();
         if (response.ok) {
           alert('Registration successful!');
-          setIsSignUp(false); // switch to login view
+          setIsSignUp(false); //switch to login view
         } else {
           alert(result.error || 'Registration failed');
         }
@@ -153,7 +153,7 @@ function AuthForm() {
         if (response.ok) {
           alert('Login successful!');
           localStorage.setItem('token', result.token);
-          navigate('/transactions');
+          navigate('/dashboard');
         } else {
           alert(result.error || 'Login failed');
         }
@@ -187,7 +187,33 @@ function AuthForm() {
     container.classList.toggle('sign-in', !isSignUp);
     container.classList.toggle('sign-up', isSignUp);
   }, [isSignUp]);
-
+  
+  const handleForgotPassword = async () => {
+    const email = formData.email;
+    if (!email) {
+      alert('Please enter your email to reset password.');
+      return;
+    }
+  
+    try {
+      const response = await fetch('http://localhost:3001/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+  
+      const result = await response.json();
+      if (response.ok) {
+        alert(result.message || 'Check your email for password reset instructions.');
+      } else {
+        alert(result.error || 'Failed to send reset instructions.');
+      }
+    } catch (err) {
+      console.error('Forgot password error:', err);
+      alert('Something went wrong.');
+    }
+  };
+  
   //setting up the maximum length of the input fields
   const nameMaxLength = 20;
   const emailMaxLength = 40;
@@ -309,7 +335,7 @@ function AuthForm() {
                 />
               </div>
               <button type="submit">Sign in</button>
-              <p><b>Forgot password?</b></p>
+              <p><b className="pointer" onClick={handleForgotPassword}>Forgot password?</b></p>
               <p>
                 <span>Don't have an account? </span>
                 <b onClick={toggle} className="pointer">Sign up here</b>

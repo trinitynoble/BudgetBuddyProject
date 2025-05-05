@@ -9,9 +9,9 @@ import db from './database.js';
 
 const PORT = 3001;
 const app = express();
-const SECRET = 'p@ssw0rd'; // Use env variable in production
+const SECRET = 'p@ssw0rd'; 
 
-// ✅ CORS setup
+// this is the cors middleware, it allows the frontend to access the backend
 app.use(cors({
   origin: 'http://localhost:3000',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -20,11 +20,11 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ Authenticated routes
+
 app.use('/api/transactions', authenticateToken, transactionRoutes);
 app.use('/api/budget', authenticateToken, budgetRoutes);
 
-// ✅ User info
+// this gets the first name of the user logged in
 app.get('/api/user', authenticateToken, (req, res) => {
   const userId = req.user.id;
   db.get('SELECT user_firstname FROM users WHERE user_id = ?', [userId], (err, row) => {
@@ -34,7 +34,7 @@ app.get('/api/user', authenticateToken, (req, res) => {
   });
 });
 
-// ✅ Register
+// this is the registration endpoint, it takes the user input and checks if all fields are filled
 app.post('/api/register', async (req, res) => {
   const { user_firstname, user_lastname, user_email, user_phonenumber, user_password } = req.body;
   if (!user_firstname || !user_lastname || !user_email || !user_phonenumber || !user_password) {
@@ -64,7 +64,8 @@ app.post('/api/register', async (req, res) => {
   });
 });
 
-// ✅ Login
+// login endpoint
+// this checks if the email and password are correct
 app.post('/api/login', (req, res) => {
   const { user_email, user_password } = req.body;
   if (!user_email || !user_password) {
@@ -91,19 +92,32 @@ app.post('/api/login', (req, res) => {
     });
   });
 });
+app.post('/api/forgot-password', (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
 
-// ✅ Misc Routes
+  db.get('SELECT user_id FROM users WHERE user_email = ?', [email], (err, user) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (!user) return res.status(404).json({ error: 'No user found with that email' });
+
+    // Simulate sending email (no actual email service)
+    console.log(`Password reset link would be emailed to ${email} (User ID: ${user.user_id})`);
+    res.json({ message: 'Password reset instructions sent (mock).' });
+  });
+});
+
+
+// this is the profile endpoint, it checks if the user is authenticated and returns the user data
 app.get('/api/profile', authenticateToken, (req, res) => {
   res.json({ message: `Welcome, ${req.user.email}!`, user: req.user });
 });
 app.get('/', (req, res) => res.send('API is running!'));
 app.get('/api/test', (req, res) => res.status(200).json({ message: 'Server is working' }));
 
-// ✅ Error handling
+// errir handling middleware
 process.on('uncaughtException', (err) => console.error('Unhandled exception:', err));
 process.on('unhandledRejection', (reason) => console.error('Unhandled rejection:', reason));
 
-// ✅ Start server
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });

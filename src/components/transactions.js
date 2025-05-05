@@ -5,7 +5,7 @@ import { jwtDecode } from 'jwt-decode';
 
 const TransactionHistory = () => {
   const [transactions, setTransactions] = useState([]);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({//this is the form data for the transaction
     transactionId: '',
     date: '',
     amount: '',
@@ -14,7 +14,8 @@ const TransactionHistory = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [editing, setEditing] = useState(false);
-
+//this is what gets the specific user id for whichever user is logged in.
+//it does so by decoding the JWT token stored in local storage.
   const getUserIdFromToken = () => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -28,12 +29,13 @@ const TransactionHistory = () => {
     }
     return null;
   };
-
+//this is the auth header for the axios requests, it checks if the token is present in local storage and adds it to the header.
+  //if not, it returns an empty object.
   const getAuthHeader = () => {
     const token = localStorage.getItem('token');
     return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
   };
-
+//this is the api call to get the transactions from the database.
   const fetchTransactions = React.useCallback(async () => {
     try {
       const response = await axios.get('http://localhost:3001/api/transactions', getAuthHeader());
@@ -53,7 +55,7 @@ const TransactionHistory = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault();//this prevents the default form submission behavior
     const userId = getUserIdFromToken();
     if (!userId) {
       alert('User not authenticated.');
@@ -64,7 +66,7 @@ const TransactionHistory = () => {
       const transactionData = {
         ...formData,
         user_id: userId,
-        date: formData.date || new Date().toISOString().split('T')[0], // ✅ fallback to today
+        date: formData.date || new Date().toISOString().split('T')[0], //this sets the default date for today's date, just to make it easier for the user
       };
 
       if (editing) {
@@ -94,12 +96,12 @@ const TransactionHistory = () => {
     }
   };
 
-  const handleEdit = (transaction) => {
+  const handleEdit = (transaction) => {//this is the edit
     setFormData(transaction);
     setEditing(true);
   };
 
-  const handleDelete = async (transactionId) => {
+  const handleDelete = async (transactionId) => {//this is the delete
     const confirmed = window.confirm('Are you sure you want to delete this transaction?');
     if (!confirmed) return;
 
@@ -110,7 +112,8 @@ const TransactionHistory = () => {
       console.error('Error deleting transaction:', err);
     }
   };
-
+//this is the filter for the transactions, it filters by transaction id, date, description, amount and user id.
+  //it also converts the search term to lowercase to make it case insensitive.
   const filteredTransactions = transactions.filter((t) =>
     t.transactionId?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.date.toLowerCase().includes(searchTerm.toLowerCase()) ||

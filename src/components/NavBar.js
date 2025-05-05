@@ -42,13 +42,7 @@ function NavBar() {
                 </Link>
               </li>
             )}
-            {!isLoggedIn() && (
-              <li className="nav-item">
-                <Link to="/signin" className="nav-links" onClick={closeMobileMenu}>
-                  Sign In
-                </Link>
-              </li>
-            )}
+            
             {isLoggedIn() && (
               <li className="nav-item">
                 <Link to="/transactions" className="nav-links" onClick={closeMobileMenu}>
@@ -63,11 +57,6 @@ function NavBar() {
                 </Link>
               </li>
             )}
-            <li className="nav-item">
-              <Link to="/about" className="nav-links" onClick={closeMobileMenu}>
-                About
-              </Link>
-            </li>
             {isLoggedIn() && (
               <li className="nav-item">
                 <button className="nav-links logout-button" onClick={handleLogout}>

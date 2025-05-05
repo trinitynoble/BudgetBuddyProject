@@ -4,7 +4,7 @@ import db from '../database.js';
 
 const router = express.Router();
 
-// ✅ Get all transactions for logged-in user
+// this gets the transactions for the specific user thats logged in
 router.get('/', authenticateToken, (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -22,7 +22,7 @@ router.get('/', authenticateToken, (req, res) => {
     }
   );
 });
-
+//this is what gets the most recent transaction for the user logged in and display it on the dash
 router.get('/recent/', authenticateToken, (req, res) => {
   console.log('/recent endpoint hit');
   const userId = req.user.id;
@@ -40,10 +40,7 @@ router.get('/recent/', authenticateToken, (req, res) => {
     }
   );
 });
-
-
-
-// ✅ Create transaction
+//this is the create transaction endpoint, it creates a new transaction 
 router.post('/', authenticateToken, (req, res) => {
   const { amount, description, date } = req.body;
   const userId = req.user.id;
@@ -70,26 +67,23 @@ router.post('/', authenticateToken, (req, res) => {
   );
 });
 
-// ✅ Update transaction
+// this is the update transaction endpoint
 router.put('/:transactionId', authenticateToken, (req, res) => {
   const { transactionId } = req.params;
   const { amount, description, date } = req.body;
   const currentUserId = req.user.id;
-
   db.get(
     'SELECT user_id FROM transactions WHERE transactionId = ?',
     [transactionId],
     (err, row) => {
-      if (err || !row || row.user_id !== currentUserId) {
+      if (err || !row || row.user_id !== currentUserId) {//this makes it so that only the user that created the transaction can update it
         return res.status(403).json({ error: 'Unauthorized or not found' });
       }
-
       db.run(
         'UPDATE transactions SET amount = ?, description = ?, date = ? WHERE transactionId = ?',
         [amount, description, date, transactionId],
         function (err) {
           if (err) return res.status(500).json({ error: 'Update failed' });
-
           db.get(
             'SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ?',
             [transactionId],
@@ -104,11 +98,10 @@ router.put('/:transactionId', authenticateToken, (req, res) => {
   );
 });
 
-// ✅ Delete transaction
+// delete transaction endpoint
 router.delete('/:transactionId', authenticateToken, (req, res) => {
   const { transactionId } = req.params;
   const currentUserId = req.user.id;
-
   db.get(
     'SELECT user_id FROM transactions WHERE transactionId = ?',
     [transactionId],
@@ -116,7 +109,6 @@ router.delete('/:transactionId', authenticateToken, (req, res) => {
       if (err || !row || row.user_id !== currentUserId) {
         return res.status(403).json({ error: 'Unauthorized or not found' });
       }
-
       db.run(
         'DELETE FROM transactions WHERE transactionId = ?',
         [transactionId],
@@ -129,13 +121,11 @@ router.delete('/:transactionId', authenticateToken, (req, res) => {
   );
 });
 
-// ✅ Search transactions
+// search transactions endpoint
 router.get('/search', authenticateToken, (req, res) => {
   const { query } = req.query;
   const userId = req.user.id;
-
   if (!query) return res.status(400).json({ error: 'Search query required' });
-
   const searchTerm = `%${query}%`;
   db.all(
     `SELECT transactionId, amount, description, date, user_id
@@ -149,11 +139,9 @@ router.get('/search', authenticateToken, (req, res) => {
   );
 });
 
-// ✅ Get transaction by ID
 router.get('/:transactionId', authenticateToken, (req, res) => {
   const { transactionId } = req.params;
   const userId = req.user.id;
-
   db.get(
     'SELECT transactionId, amount, description, date, user_id FROM transactions WHERE transactionId = ? AND user_id = ?',
     [transactionId, userId],
